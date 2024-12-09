@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools >= 61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "robo_manip_aug"
+description = "Data augmentation for robust imitation learning of robot manipulation"
+readme = "README.md"
+authors = [
+  {name = "Masaki Murooka", email = "m-murooka@aist.go.jp"},
+  {name = "Hanbit OH", email = "oh.hanbit.oe9@aist.go.jp"},
+]
+maintainers = [
+  {name = "Masaki Murooka", email = "m-murooka@aist.go.jp"},
+]
+requires-python = ">= 3.8"
+dependencies = []
+dynamic = ["version"]
+
+[tool.setuptools.packages.find]
+include = ["robo_manip_aug", "robo_manip_aug.*"]

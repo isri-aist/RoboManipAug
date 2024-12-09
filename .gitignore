@@ -1,0 +1,14 @@
+*~
+*.pyc
+
+venv*
+.python-version*
+
+robo_manip_aug.egg-info
+
+MUJOCO_LOG.TXT
+
+GPATH
+GRTAGS
+GSYMS
+GTAGS
