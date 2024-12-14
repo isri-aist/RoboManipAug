@@ -30,7 +30,9 @@ class VisualizeDemo(object):
     def setup_data(self):
         self.data_manager = DataManager(env=None)
         self.data_manager.load_data(self.args.teleop_data_path)
-        self.data_len = len(self.data_manager.get_data(DataKey.TIME))
+        time_seq = self.data_manager.get_data(DataKey.TIME)
+        self.data_len = len(time_seq)
+        self.dt = np.mean(time_seq[1:] - time_seq[:-1])
 
     def setup_visualization(self):
         # Initialize figure
@@ -48,7 +50,7 @@ class VisualizeDemo(object):
         # Draw EEF trajectory
         measured_eef_pose_seq = self.data_manager.get_data(DataKey.MEASURED_EEF_POSE)
         eef_traj_mat_list = np.empty((self.data_len, 4, 4))
-        offset_pos = np.array([0.0, 0.0, 0.12])  # [m]
+        offset_pos = np.array([0.0, 0.0, 0.15])  # [m]
         offset_mat = pytrans3d.transformations.transform_from(
             np.identity(3), offset_pos
         )
@@ -87,11 +89,16 @@ class VisualizeDemo(object):
             self.fig.visualizer.poll_events()
             self.fig.visualizer.update_renderer()
 
-            time.sleep(0.01)
+            time.sleep(self.dt)
 
         self.fig.show()
 
     def update_once(self, time_idx):
+        measured_joint_pos = self.data_manager.get_single_data(
+            DataKey.MEASURED_JOINT_POS, time_idx
+        )
+
+        # Set arm joints
         arm_joint_name_list = [
             "shoulder_pan_joint",
             "shoulder_lift_joint",
@@ -100,12 +107,26 @@ class VisualizeDemo(object):
             "wrist_2_joint",
             "wrist_3_joint",
         ]
-
-        measured_joint_pos = self.data_manager.get_single_data(
-            DataKey.MEASURED_JOINT_POS, time_idx
-        )
         for joint_idx, joint_name in enumerate(arm_joint_name_list):
             self.urdf_tm.set_joint(joint_name, measured_joint_pos[joint_idx])
+
+        # Set gripper joints
+        gripper_joint_name_list = [
+            "right_driver_joint",
+            "right_spring_link_joint",
+            "right_follower_joint",
+            "left_driver_joint",
+            "left_spring_link_joint",
+            "left_follower_joint",
+        ]
+        for joint_idx, joint_name in enumerate(gripper_joint_name_list):
+            scale = 1.0
+            if "follower" in joint_name:
+                scale = -1.0
+            self.urdf_tm.set_joint(
+                joint_name, np.deg2rad(scale * measured_joint_pos[-1] / 255.0 * 45.0)
+            )
+
         self.urdf_graph.set_data()
 
 
