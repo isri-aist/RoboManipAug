@@ -3,14 +3,12 @@ import time
 import argparse
 import numpy as np
 
+import open3d as o3d
 import pytransform3d as pytrans3d
 from pytransform3d.urdf import UrdfTransformManager
 import pytransform3d.visualizer as pv
 
-from robo_manip_baselines.common import (
-    DataKey,
-    DataManager,
-)
+from robo_manip_baselines.common import DataKey, DataManager
 
 
 class VisualizeDemo(object):
@@ -24,7 +22,6 @@ class VisualizeDemo(object):
     def setup_args(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("teleop_data_path", type=str)
-        parser.add_argument("--skip", default=1, type=int, help="skip")
         self.args = parser.parse_args()
 
     def setup_data(self):
@@ -36,8 +33,16 @@ class VisualizeDemo(object):
 
     def setup_visualization(self):
         # Initialize figure
-        self.fig = pv.figure("RoboManipAug VisualizeDemo")
+        self.fig = pv.figure("RoboManipAug VisualizeDemo", with_key_callbacks=True)
         self.fig.view_init()
+
+        # Set key callbacks
+        # See https://www.glfw.org/docs/latest/group__keys.html for key numbers
+        self.fig.visualizer.register_key_action_callback(256, self.escape_callback)
+        self.fig.visualizer.register_key_action_callback(262, self.right_callback)
+        self.fig.visualizer.register_key_action_callback(263, self.left_callback)
+        self.fig.visualizer.register_key_action_callback(264, self.down_callback)
+        self.fig.visualizer.register_key_action_callback(265, self.up_callback)
 
         # Load a URDF model of robot
         self.urdf_tm = UrdfTransformManager()
@@ -61,16 +66,17 @@ class VisualizeDemo(object):
             mat = pytrans3d.transformations.transform_from(rot, pos)
             eef_traj_mat_list[time_idx] = mat @ offset_mat
         traj_color = [0.0, 0.0, 0.0]
-        eef_traj = pv.Trajectory(eef_traj_mat_list, c=traj_color)
-        self.fig.add_geometry(eef_traj.geometries[0])
+        self.eef_traj = pv.Trajectory(eef_traj_mat_list, c=traj_color)
+        self.fig.add_geometry(self.eef_traj.geometries[0])
         for time_idx in range(self.data_len):
             waypoint_mat = np.identity(4)
-            waypoint_radius = 4e-3  # [m]
+            waypoint_radius = 2e-3  # [m]
             waypoint_mat = eef_traj_mat_list[time_idx]
-            waypoint_color = [1.0, 0.0, 0.0]
-            self.fig.plot_sphere(
+            waypoint_color = [1.0, 0.6, 0.0]
+            waypoint_sphere = pv.Sphere(
                 radius=waypoint_radius, A2B=waypoint_mat, c=waypoint_color
             )
+            self.fig.add_geometry(waypoint_sphere.geometries[0])
 
         # Set camera pose
         view_ctrl = self.fig.visualizer.get_view_control()
@@ -79,9 +85,90 @@ class VisualizeDemo(object):
         view_ctrl.set_up([0.0, 0.0, 1.0])
         view_ctrl.set_zoom(0.6)
 
+        # Draw acceptable sphere
+        self.time_idx = 0
+        self.acceptable_scale = 0.1  # [m]
+        self.acceptable_sphere_lineset = None
+        self.draw_acceptable_sphere()
+
+    def update_time_idx(self, delta, action, mods):
+        if action == 0:  # release
+            return
+        if mods == 1:  # shift key
+            scale = 5.0
+        elif mods == 2:  # ctrl key
+            scale = 0.2
+        else:
+            scale = 1.0
+        self.time_idx = np.clip(
+            self.time_idx + int(scale * delta), 0, self.data_len - 1
+        )
+
+        self.draw_acceptable_sphere()
+
+    def update_acceptable_scale(self, delta, action, mods):
+        if action == 0:  # release
+            return
+        if mods == 1:  # shift key
+            scale = 5.0
+        elif mods == 2:  # ctrl key
+            scale = 0.2
+        else:
+            scale = 1.0
+        self.acceptable_scale = np.clip(
+            self.acceptable_scale + scale * delta, 1e-3, 1.0
+        )
+
+        self.draw_acceptable_sphere()
+
+    def draw_acceptable_sphere(self):
+        acceptable_sphere = o3d.geometry.TriangleMesh.create_sphere(
+            radius=self.acceptable_scale, resolution=12
+        )
+        acceptable_sphere.transform(self.eef_traj.H[self.time_idx])
+        if self.acceptable_sphere_lineset is not None:
+            self.fig.visualizer.remove_geometry(
+                self.acceptable_sphere_lineset, reset_bounding_box=False
+            )
+        self.acceptable_sphere_lineset = o3d.geometry.LineSet.create_from_triangle_mesh(
+            acceptable_sphere
+        )
+        self.fig.visualizer.add_geometry(
+            self.acceptable_sphere_lineset, reset_bounding_box=False
+        )
+        acceptable_sphere_color = [1.0, 0.0, 0.0]
+        self.acceptable_sphere_lineset.colors = o3d.utility.Vector3dVector(
+            [
+                acceptable_sphere_color
+                for _ in range(len(self.acceptable_sphere_lineset.lines))
+            ]
+        )
+
+    def escape_callback(self, vis, action, mods):
+        if action != 1:  # NOT press
+            return
+        self.quit_flag = True
+
+    def right_callback(self, vis, action, mods):
+        delta = 5
+        self.update_time_idx(delta, action, mods)
+
+    def left_callback(self, vis, action, mods):
+        delta = -5
+        self.update_time_idx(delta, action, mods)
+
+    def up_callback(self, vis, action, mods):
+        delta = 0.03
+        self.update_acceptable_scale(delta, action, mods)
+
+    def down_callback(self, vis, action, mods):
+        delta = -0.03
+        self.update_acceptable_scale(delta, action, mods)
+
     def main(self):
-        for time_idx in range(0, self.data_len, self.args.skip):
-            self.update_once(time_idx)
+        self.quit_flag = False
+        while not self.quit_flag:
+            self.update_once(self.time_idx)
 
             for geom in self.urdf_graph.geometries:
                 self.fig.update_geometry(geom)
@@ -89,9 +176,7 @@ class VisualizeDemo(object):
             self.fig.visualizer.poll_events()
             self.fig.visualizer.update_renderer()
 
-            time.sleep(self.dt)
-
-        self.fig.show()
+            time.sleep(0.01)
 
     def update_once(self, time_idx):
         measured_joint_pos = self.data_manager.get_single_data(
