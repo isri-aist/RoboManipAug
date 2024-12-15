@@ -11,6 +11,25 @@ import pytransform3d.visualizer as pv
 from robo_manip_baselines.common import DataKey, DataManager
 
 
+class AcceptableRegion(object):
+    def __init__(self, time_idx, width, center, convergent_time_idx=None):
+        self.time_idx = time_idx
+        self.width = width
+        self.center = center
+        self.convergent_time_idx = convergent_time_idx
+
+    def make_sphere(self, color):
+        sphere = o3d.geometry.TriangleMesh.create_sphere(
+            radius=self.width, resolution=8
+        )
+        sphere.transform(self.center)
+        sphere_lineset = o3d.geometry.LineSet.create_from_triangle_mesh(sphere)
+        sphere_lineset.colors = o3d.utility.Vector3dVector(
+            [color] * len(sphere_lineset.lines)
+        )
+        return sphere_lineset
+
+
 class VisualizeDemo(object):
     def __init__(self):
         self.setup_args()
@@ -29,7 +48,8 @@ class VisualizeDemo(object):
     def setup_variables(self):
         self.current_time_idx = 0
         self.next_time_idx = None
-        self.time_idx_list = [self.current_time_idx]
+        self.acceptable_region_list = []
+        self.sphere_list = []
 
     def setup_data(self):
         self.data_manager = DataManager(env=None)
@@ -79,7 +99,7 @@ class VisualizeDemo(object):
             waypoint_mat = np.identity(4)
             waypoint_radius = 2e-3  # [m]
             waypoint_mat = eef_traj_mat_list[time_idx]
-            waypoint_color = [1.0, 0.6, 0.0]
+            waypoint_color = [0.0, 1.0, 0.0]
             waypoint_sphere = pv.Sphere(
                 radius=waypoint_radius, A2B=waypoint_mat, c=waypoint_color
             )
@@ -113,12 +133,16 @@ class VisualizeDemo(object):
         self.update_acceptable_sphere()
 
     def update_acceptable_sphere(self):
-        # Calculate next center
-        current_center = self.eef_traj.H[self.current_time_idx, 0:3, 3]
+        # Calculate next time index
+        current_center_mat = self.eef_traj.H[self.current_time_idx]
+        current_center_pos = current_center_mat[0:3, 3]
+        current_acceptable_region = AcceptableRegion(
+            self.current_time_idx, self.acceptable_width, current_center_mat
+        )
         if self.current_time_idx < self.data_len - 1:
             subseq_start_time_idx = self.current_time_idx + 1
             rel_pos_subseq = (
-                self.eef_traj.H[subseq_start_time_idx:, 0:3, 3] - current_center
+                self.eef_traj.H[subseq_start_time_idx:, 0:3, 3] - current_center_pos
             )
             satisfied_time_idxes = np.argwhere(
                 np.linalg.norm(rel_pos_subseq, axis=1) > self.acceptable_width
@@ -130,28 +154,26 @@ class VisualizeDemo(object):
         else:
             self.next_time_idx = None
 
-        # Draw sphere
-        acceptable_sphere = o3d.geometry.TriangleMesh.create_sphere(
-            radius=self.acceptable_width, resolution=12
-        )
-        acceptable_sphere.transform(self.eef_traj.H[self.current_time_idx])
-        if self.acceptable_sphere_lineset is not None:
-            self.fig.visualizer.remove_geometry(
-                self.acceptable_sphere_lineset, reset_bounding_box=False
-            )
-        self.acceptable_sphere_lineset = o3d.geometry.LineSet.create_from_triangle_mesh(
-            acceptable_sphere
-        )
-        self.fig.visualizer.add_geometry(
-            self.acceptable_sphere_lineset, reset_bounding_box=False
-        )
-        acceptable_sphere_color = [1.0, 0.0, 0.0]
-        self.acceptable_sphere_lineset.colors = o3d.utility.Vector3dVector(
-            [
-                acceptable_sphere_color
-                for _ in range(len(self.acceptable_sphere_lineset.lines))
-            ]
-        )
+        # Draw spheres
+        for sphere in self.sphere_list:
+            self.fig.visualizer.remove_geometry(sphere, reset_bounding_box=False)
+        self.sphere_list = []
+        acceptable_region_list = self.acceptable_region_list + [
+            current_acceptable_region
+        ]
+        for acceptable_region_idx, acceptable_region in enumerate(
+            acceptable_region_list
+        ):
+            if acceptable_region_idx == len(self.acceptable_region_list):
+                if self.next_time_idx is None:
+                    continue
+                else:
+                    sphere_color = [1.0, 0.6, 0.0]
+            else:
+                sphere_color = [1.0, 0.0, 0.0]
+            sphere = acceptable_region.make_sphere(sphere_color)
+            self.fig.visualizer.add_geometry(sphere, reset_bounding_box=False)
+            self.sphere_list.append(sphere)
 
     def escape_callback(self, vis, action, mods):
         if action != 1:  # NOT press
@@ -166,19 +188,39 @@ class VisualizeDemo(object):
         if self.next_time_idx is None:
             return
 
+        # Store acceptable region
+        current_center_mat = self.eef_traj.H[self.current_time_idx]
+        self.acceptable_region_list.append(
+            AcceptableRegion(
+                self.current_time_idx,
+                self.acceptable_width,
+                current_center_mat,
+                self.next_time_idx,
+            )
+        )
+
+        # Increment time index
         self.current_time_idx = self.next_time_idx
-        self.time_idx_list.append(self.current_time_idx)
+
         self.update_acceptable_sphere()
 
     def left_callback(self, vis, action, mods):
         if action != 1:  # NOT press
             return
 
-        if len(self.time_idx_list) <= 1:
+        if len(self.acceptable_region_list) == 0:
             return
 
-        self.time_idx_list.pop(-1)
-        self.current_time_idx = self.time_idx_list[-1]
+        # Decrement time index
+        if len(self.acceptable_region_list) == 1:
+            self.current_time_idx = 0
+        else:
+            self.current_time_idx = self.acceptable_region_list[-1].time_idx
+        self.acceptable_width = self.acceptable_region_list[-1].width
+
+        # Remove acceptable region
+        self.acceptable_region_list.pop(-1)
+
         self.update_acceptable_sphere()
 
     def up_callback(self, vis, action, mods):
