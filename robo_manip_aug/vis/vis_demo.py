@@ -55,10 +55,12 @@ class VisualizeDemo(object):
     def setup_args(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("teleop_data_path", type=str)
-        parser.add_argument("--draw_all_spheres", action="store_true")
         self.args = parser.parse_args()
 
     def setup_variables(self):
+        self.quit_flag = False
+        self.draw_prev_spheres_flag = True
+
         self.current_time_idx = 0
         self.next_time_idx = None
         self.acceptable_region_list = []
@@ -83,6 +85,7 @@ class VisualizeDemo(object):
         self.fig.visualizer.register_key_action_callback(263, self.left_callback)
         self.fig.visualizer.register_key_action_callback(264, self.down_callback)
         self.fig.visualizer.register_key_action_callback(265, self.up_callback)
+        self.fig.visualizer.register_key_callback(ord("V"), self.v_callback)
 
         # Load a URDF model of robot
         self.urdf_tm = UrdfTransformManager()
@@ -192,7 +195,7 @@ class VisualizeDemo(object):
             # Draw region sphere
             if (
                 acceptable_region_idx == len(self.acceptable_region_list)
-                or self.args.draw_all_spheres
+                or self.draw_prev_spheres_flag
             ):
                 region_sphere = acceptable_region.make_region_sphere(
                     region_sphere_color
@@ -275,8 +278,12 @@ class VisualizeDemo(object):
         delta = -0.02
         self.update_acceptable_scale(delta, action, mods)
 
+    def v_callback(self, vis):
+        self.draw_prev_spheres_flag = not self.draw_prev_spheres_flag
+
+        self.update_acceptable_sphere()
+
     def main(self):
-        self.quit_flag = False
         while not self.quit_flag:
             self.update_once()
 
