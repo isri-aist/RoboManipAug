@@ -15,6 +15,8 @@ class VisualizeDemo(object):
     def __init__(self):
         self.setup_args()
 
+        self.setup_variables()
+
         self.setup_data()
 
         self.setup_visualization()
@@ -23,6 +25,11 @@ class VisualizeDemo(object):
         parser = argparse.ArgumentParser()
         parser.add_argument("teleop_data_path", type=str)
         self.args = parser.parse_args()
+
+    def setup_variables(self):
+        self.current_time_idx = 0
+        self.next_time_idx = None
+        self.time_idx_list = [self.current_time_idx]
 
     def setup_data(self):
         self.data_manager = DataManager(env=None)
@@ -86,25 +93,9 @@ class VisualizeDemo(object):
         view_ctrl.set_zoom(0.6)
 
         # Draw acceptable sphere
-        self.time_idx = 0
-        self.acceptable_scale = 0.1  # [m]
+        self.acceptable_width = 0.04  # [m]
         self.acceptable_sphere_lineset = None
-        self.draw_acceptable_sphere()
-
-    def update_time_idx(self, delta, action, mods):
-        if action == 0:  # release
-            return
-        if mods == 1:  # shift key
-            scale = 5.0
-        elif mods == 2:  # ctrl key
-            scale = 0.2
-        else:
-            scale = 1.0
-        self.time_idx = np.clip(
-            self.time_idx + int(scale * delta), 0, self.data_len - 1
-        )
-
-        self.draw_acceptable_sphere()
+        self.update_acceptable_sphere()
 
     def update_acceptable_scale(self, delta, action, mods):
         if action == 0:  # release
@@ -115,17 +106,35 @@ class VisualizeDemo(object):
             scale = 0.2
         else:
             scale = 1.0
-        self.acceptable_scale = np.clip(
-            self.acceptable_scale + scale * delta, 1e-3, 1.0
+        self.acceptable_width = np.clip(
+            self.acceptable_width + scale * delta, 1e-3, 1.0
         )
 
-        self.draw_acceptable_sphere()
+        self.update_acceptable_sphere()
 
-    def draw_acceptable_sphere(self):
+    def update_acceptable_sphere(self):
+        # Calculate next center
+        current_center = self.eef_traj.H[self.current_time_idx, 0:3, 3]
+        if self.current_time_idx < self.data_len - 1:
+            subseq_start_time_idx = self.current_time_idx + 1
+            rel_pos_subseq = (
+                self.eef_traj.H[subseq_start_time_idx:, 0:3, 3] - current_center
+            )
+            satisfied_time_idxes = np.argwhere(
+                np.linalg.norm(rel_pos_subseq, axis=1) > self.acceptable_width
+            )
+            if len(satisfied_time_idxes) == 0:
+                self.next_time_idx = self.data_len - 1
+            else:
+                self.next_time_idx = subseq_start_time_idx + satisfied_time_idxes[0, 0]
+        else:
+            self.next_time_idx = None
+
+        # Draw sphere
         acceptable_sphere = o3d.geometry.TriangleMesh.create_sphere(
-            radius=self.acceptable_scale, resolution=12
+            radius=self.acceptable_width, resolution=12
         )
-        acceptable_sphere.transform(self.eef_traj.H[self.time_idx])
+        acceptable_sphere.transform(self.eef_traj.H[self.current_time_idx])
         if self.acceptable_sphere_lineset is not None:
             self.fig.visualizer.remove_geometry(
                 self.acceptable_sphere_lineset, reset_bounding_box=False
@@ -147,28 +156,43 @@ class VisualizeDemo(object):
     def escape_callback(self, vis, action, mods):
         if action != 1:  # NOT press
             return
+
         self.quit_flag = True
 
     def right_callback(self, vis, action, mods):
-        delta = 5
-        self.update_time_idx(delta, action, mods)
+        if action != 1:  # NOT press
+            return
+
+        if self.next_time_idx is None:
+            return
+
+        self.current_time_idx = self.next_time_idx
+        self.time_idx_list.append(self.current_time_idx)
+        self.update_acceptable_sphere()
 
     def left_callback(self, vis, action, mods):
-        delta = -5
-        self.update_time_idx(delta, action, mods)
+        if action != 1:  # NOT press
+            return
+
+        if len(self.time_idx_list) <= 1:
+            return
+
+        self.time_idx_list.pop(-1)
+        self.current_time_idx = self.time_idx_list[-1]
+        self.update_acceptable_sphere()
 
     def up_callback(self, vis, action, mods):
-        delta = 0.03
+        delta = 0.02
         self.update_acceptable_scale(delta, action, mods)
 
     def down_callback(self, vis, action, mods):
-        delta = -0.03
+        delta = -0.02
         self.update_acceptable_scale(delta, action, mods)
 
     def main(self):
         self.quit_flag = False
         while not self.quit_flag:
-            self.update_once(self.time_idx)
+            self.update_once()
 
             for geom in self.urdf_graph.geometries:
                 self.fig.update_geometry(geom)
@@ -178,9 +202,9 @@ class VisualizeDemo(object):
 
             time.sleep(0.01)
 
-    def update_once(self, time_idx):
+    def update_once(self):
         measured_joint_pos = self.data_manager.get_single_data(
-            DataKey.MEASURED_JOINT_POS, time_idx
+            DataKey.MEASURED_JOINT_POS, self.current_time_idx
         )
 
         # Set arm joints
