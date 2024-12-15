@@ -42,7 +42,7 @@ class AcceptableRegion(object):
         return sphere
 
 
-class VisualizeDemo(object):
+class AnnotateAcceptableRegion(object):
     def __init__(self):
         self.setup_args()
 
@@ -132,6 +132,54 @@ class VisualizeDemo(object):
         self.acceptable_width = 0.04  # [m]
         self.acceptable_sphere_lineset = None
         self.update_acceptable_sphere()
+
+    def run(self):
+        while not self.quit_flag:
+            self.update_once()
+
+            for geom in self.urdf_graph.geometries:
+                self.fig.update_geometry(geom)
+
+            self.fig.visualizer.poll_events()
+            self.fig.visualizer.update_renderer()
+
+            time.sleep(0.01)
+
+    def update_once(self):
+        measured_joint_pos = self.data_manager.get_single_data(
+            DataKey.MEASURED_JOINT_POS, self.current_time_idx
+        )
+
+        # Set arm joints
+        arm_joint_name_list = [
+            "shoulder_pan_joint",
+            "shoulder_lift_joint",
+            "elbow_joint",
+            "wrist_1_joint",
+            "wrist_2_joint",
+            "wrist_3_joint",
+        ]
+        for joint_idx, joint_name in enumerate(arm_joint_name_list):
+            self.urdf_tm.set_joint(joint_name, measured_joint_pos[joint_idx])
+
+        # Set gripper joints
+        gripper_joint_name_list = [
+            "right_driver_joint",
+            "right_spring_link_joint",
+            "right_follower_joint",
+            "left_driver_joint",
+            "left_spring_link_joint",
+            "left_follower_joint",
+        ]
+        for joint_idx, joint_name in enumerate(gripper_joint_name_list):
+            scale = 1.0
+            if "follower" in joint_name:
+                scale = -1.0
+            self.urdf_tm.set_joint(
+                joint_name, np.deg2rad(scale * measured_joint_pos[-1] / 255.0 * 45.0)
+            )
+
+        self.urdf_graph.set_data()
 
     def update_acceptable_scale(self, delta, action, mods):
         if action == 0:  # release
@@ -283,55 +331,7 @@ class VisualizeDemo(object):
 
         self.update_acceptable_sphere()
 
-    def main(self):
-        while not self.quit_flag:
-            self.update_once()
-
-            for geom in self.urdf_graph.geometries:
-                self.fig.update_geometry(geom)
-
-            self.fig.visualizer.poll_events()
-            self.fig.visualizer.update_renderer()
-
-            time.sleep(0.01)
-
-    def update_once(self):
-        measured_joint_pos = self.data_manager.get_single_data(
-            DataKey.MEASURED_JOINT_POS, self.current_time_idx
-        )
-
-        # Set arm joints
-        arm_joint_name_list = [
-            "shoulder_pan_joint",
-            "shoulder_lift_joint",
-            "elbow_joint",
-            "wrist_1_joint",
-            "wrist_2_joint",
-            "wrist_3_joint",
-        ]
-        for joint_idx, joint_name in enumerate(arm_joint_name_list):
-            self.urdf_tm.set_joint(joint_name, measured_joint_pos[joint_idx])
-
-        # Set gripper joints
-        gripper_joint_name_list = [
-            "right_driver_joint",
-            "right_spring_link_joint",
-            "right_follower_joint",
-            "left_driver_joint",
-            "left_spring_link_joint",
-            "left_follower_joint",
-        ]
-        for joint_idx, joint_name in enumerate(gripper_joint_name_list):
-            scale = 1.0
-            if "follower" in joint_name:
-                scale = -1.0
-            self.urdf_tm.set_joint(
-                joint_name, np.deg2rad(scale * measured_joint_pos[-1] / 255.0 * 45.0)
-            )
-
-        self.urdf_graph.set_data()
-
 
 if __name__ == "__main__":
-    vis_demo = VisualizeDemo()
-    vis_demo.main()
+    annotate = AnnotateAcceptableRegion()
+    annotate.run()
