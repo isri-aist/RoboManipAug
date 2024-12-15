@@ -18,7 +18,7 @@ class AcceptableRegion(object):
         self.center = center
         self.convergent_time_idx = convergent_time_idx
 
-    def make_sphere(self, color):
+    def make_region_sphere(self, color):
         sphere = o3d.geometry.TriangleMesh.create_sphere(
             radius=self.width, resolution=8
         )
@@ -28,6 +28,18 @@ class AcceptableRegion(object):
             [color] * len(sphere_lineset.lines)
         )
         return sphere_lineset
+
+    def make_center_sphere(self, color):
+        center_radius = 3e-3  # [m]
+        sphere = o3d.geometry.TriangleMesh.create_sphere(
+            radius=center_radius, resolution=8
+        )
+        sphere.vertex_colors = o3d.utility.Vector3dVector(
+            [color] * len(sphere.vertices)
+        )
+        sphere.compute_vertex_normals()
+        sphere.transform(self.center)
+        return sphere
 
 
 class VisualizeDemo(object):
@@ -43,6 +55,7 @@ class VisualizeDemo(object):
     def setup_args(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("teleop_data_path", type=str)
+        parser.add_argument("--draw_all_spheres", action="store_true")
         self.args = parser.parse_args()
 
     def setup_variables(self):
@@ -154,26 +167,57 @@ class VisualizeDemo(object):
         else:
             self.next_time_idx = None
 
-        # Draw spheres
+        # Erase previously drawn spheres
         for sphere in self.sphere_list:
             self.fig.visualizer.remove_geometry(sphere, reset_bounding_box=False)
         self.sphere_list = []
+
         acceptable_region_list = self.acceptable_region_list + [
             current_acceptable_region
         ]
         for acceptable_region_idx, acceptable_region in enumerate(
             acceptable_region_list
         ):
+            # Set sphere color
             if acceptable_region_idx == len(self.acceptable_region_list):
                 if self.next_time_idx is None:
                     continue
                 else:
-                    sphere_color = [1.0, 0.6, 0.0]
+                    region_sphere_color = [1.0, 0.0, 1.0]
+                    center_sphere_color = [0.8, 0.3, 0.8]
             else:
-                sphere_color = [1.0, 0.0, 0.0]
-            sphere = acceptable_region.make_sphere(sphere_color)
-            self.fig.visualizer.add_geometry(sphere, reset_bounding_box=False)
-            self.sphere_list.append(sphere)
+                region_sphere_color = [1.0, 0.0, 0.0]
+                center_sphere_color = [0.8, 0.3, 0.3]
+
+            # Draw region sphere
+            if (
+                acceptable_region_idx == len(self.acceptable_region_list)
+                or self.args.draw_all_spheres
+            ):
+                region_sphere = acceptable_region.make_region_sphere(
+                    region_sphere_color
+                )
+                self.fig.visualizer.add_geometry(
+                    region_sphere, reset_bounding_box=False
+                )
+                self.sphere_list.append(region_sphere)
+
+            # Draw center sphere
+            center_sphere = acceptable_region.make_center_sphere(center_sphere_color)
+            self.fig.visualizer.add_geometry(center_sphere, reset_bounding_box=False)
+            self.sphere_list.append(center_sphere)
+
+        # Draw next center sphere
+        if self.next_time_idx is not None:
+            next_center_mat = self.eef_traj.H[self.next_time_idx]
+            next_center_sphere_color = [1.0, 0.6, 0.0]
+            next_center_sphere = AcceptableRegion(
+                self.next_time_idx, None, next_center_mat
+            ).make_center_sphere(next_center_sphere_color)
+            self.fig.visualizer.add_geometry(
+                next_center_sphere, reset_bounding_box=False
+            )
+            self.sphere_list.append(next_center_sphere)
 
     def escape_callback(self, vis, action, mods):
         if action != 1:  # NOT press
