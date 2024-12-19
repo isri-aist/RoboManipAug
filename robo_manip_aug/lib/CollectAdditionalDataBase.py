@@ -1,3 +1,4 @@
+import yaml
 import argparse
 import time
 import datetime
@@ -26,9 +27,16 @@ class CollectAdditionalDataBase(TeleopBase):
             parser = argparse.ArgumentParser()
 
         parser.add_argument(
-            "base_data",
+            "--base_demo_path",
             type=str,
-            help="log file path from which data augmentation will be based",
+            help="path of teleoperation data as base for data augmentation",
+            required=True,
+        )
+        parser.add_argument(
+            "--annotation_path",
+            type=str,
+            help="Path of annotation data describing the region of data augmentation",
+            required=True,
         )
 
         super().setup_args(parser)
@@ -114,10 +122,17 @@ class CollectAdditionalDataBase(TeleopBase):
         # Reset managers
         self.motion_manager.reset()
         self.data_manager.reset()
+        self.base_data_manager.reset()
 
-        # Load base data
-        self.base_data_manager.load_data(self.args.base_data)
-        print("- Load teleoperation data: {}".format(self.args.base_data))
+        # Load base demo data
+        print("- Load teleoperation data: {}".format(self.args.base_demo_path))
+        self.base_data_manager.load_data(self.args.base_demo_path)
+
+        # Load annotation data
+        with open(self.args.annotation_path, "r") as f:
+            self.annotation_data = yaml.load(f, Loader=yaml.SafeLoader)
+
+        # Reset env
         world_idx = self.base_data_manager.get_data("world_idx").tolist()
         self.data_manager.setup_sim_world(world_idx)
         self.base_data_manager.setup_sim_world(world_idx)
