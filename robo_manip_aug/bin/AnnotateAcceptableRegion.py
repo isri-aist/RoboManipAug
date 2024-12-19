@@ -2,6 +2,7 @@ from os import path
 import time
 import argparse
 import numpy as np
+import yaml
 
 import open3d as o3d
 import pytransform3d as pytrans3d
@@ -17,6 +18,19 @@ class AcceptableRegion(object):
         self.width = width
         self.center = center
         self.convergent_time_idx = convergent_time_idx
+
+    def to_dict(self, eef_traj_mat_list):
+        center_mat = eef_traj_mat_list[self.time_idx]
+        center_pos = center_mat[0:3, 3]
+        rot = center_mat[0:3, 0:3]
+        convergent_mat = eef_traj_mat_list[self.convergent_time_idx]
+        convergent_pos = convergent_mat[0:3, 3]
+        return {
+            "center_pos": center_pos.tolist(),
+            "convergent_pos": convergent_pos.tolist(),
+            "radius": float(self.width),
+            "rot": rot.tolist(),
+        }
 
     def make_region_sphere(self, color):
         sphere = o3d.geometry.TriangleMesh.create_sphere(
@@ -85,6 +99,7 @@ class AnnotateAcceptableRegion(object):
         self.fig.visualizer.register_key_action_callback(263, self.left_callback)
         self.fig.visualizer.register_key_action_callback(264, self.down_callback)
         self.fig.visualizer.register_key_action_callback(265, self.up_callback)
+        self.fig.visualizer.register_key_callback(ord("S"), self.s_callback)
         self.fig.visualizer.register_key_callback(ord("V"), self.v_callback)
 
         # Load a URDF model of robot
@@ -325,6 +340,22 @@ class AnnotateAcceptableRegion(object):
     def down_callback(self, vis, action, mods):
         delta = -0.02
         self.update_acceptable_scale(delta, action, mods)
+
+    def s_callback(self, vis):
+        dump_dict = {}
+        dump_dict["acceptable_region_list"] = []
+        for acceptable_region in self.acceptable_region_list:
+            dump_dict["acceptable_region_list"].append(
+                acceptable_region.to_dict(self.eef_traj.H)
+            )
+        filename = "annotation_data/{}_Annotation.yaml".format(
+            path.splitext(path.basename(self.args.teleop_data_path))[0]
+        )
+        with open(filename, "w") as f:
+            yaml.dump(dump_dict, f)
+        print(
+            "[AnnotateAcceptableRegion] Save the annotation data to {}".format(filename)
+        )
 
     def v_callback(self, vis):
         self.draw_prev_spheres_flag = not self.draw_prev_spheres_flag
