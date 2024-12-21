@@ -5,11 +5,27 @@ import datetime
 import numpy as np
 import cv2
 import threading
+import pinocchio as pin
 from robo_manip_baselines.common import (
     MotionStatus,
     DataManager,
 )
 from robo_manip_baselines.teleop import TeleopBase
+from robo_manip_aug import MotionInterpolator
+
+
+def sample_points_on_sphere(center, radius, num_points):
+    phi = np.random.uniform(0, 2 * np.pi, num_points)
+    cos_theta = np.random.uniform(-1, 1, num_points)
+    theta = np.arccos(cos_theta)
+
+    x = np.sin(theta) * np.cos(phi)
+    y = np.sin(theta) * np.sin(phi)
+    z = np.cos(theta)
+
+    points = np.stack((x, y, z), axis=-1) * radius + center
+
+    return points
 
 
 class CollectAdditionalDataBase(TeleopBase):
@@ -22,6 +38,9 @@ class CollectAdditionalDataBase(TeleopBase):
         self.base_data_manager = DataManager(self.env, demo_name=self.demo_name)
         self.base_data_manager.setup_camera_info()
         self.datetime_now = datetime.datetime.now()
+
+        # Setup motion interpolator
+        self.motion_interpolator = MotionInterpolator(self.env, self.motion_manager)
 
     def setup_args(self, parser=None):
         if parser is None:
@@ -125,40 +144,35 @@ class CollectAdditionalDataBase(TeleopBase):
         )
 
     def collect_data(self):
-        def is_motion_completed():
-            if self.motion_space == "JOINT":
-                joint_thre = 1e-2  # [rad]
-                return (
-                    np.sum(np.abs(self.motion_target - self.motion_manager.joint_pos))
-                    < joint_thre
-                )
-
-        def wait_motion_completion():
-            while not is_motion_completed():
-                time.sleep(0.01)
-
         for acceptable_region_idx, acceptable_region in enumerate(
             self.annotation_data["acceptable_region_list"]
         ):
-            self.motion_space = "JOINT"
-            joint_pos = np.array(acceptable_region["joint_pos"])
-            self.motion_target = joint_pos[self.env.unwrapped.ik_arm_joint_ids]
-            wait_motion_completion()
+            # Sample EEF position
+            num_points = 4
+            center_pos = np.array(acceptable_region["center"]["eef_pos"])
+            center_rot = np.array(acceptable_region["center"]["eef_rot"])
+            radius = acceptable_region["radius"]
+            sampled_pos_list = sample_points_on_sphere(center_pos, radius, num_points)
+
+            for sampled_pos in sampled_pos_list:
+                # Move to convergence point
+                joint_pos = np.array(acceptable_region["convergence"]["joint_pos"])
+                self.motion_interpolator.set_target(
+                    MotionInterpolator.TargetSpace.JOINT,
+                    joint_pos[self.env.unwrapped.ik_arm_joint_ids],
+                )
+                self.motion_interpolator.wait()
+
+                # Move to sampled point
+                self.motion_interpolator.set_target(
+                    MotionInterpolator.TargetSpace.EEF, pin.SE3(center_rot, sampled_pos)
+                )
+                self.motion_interpolator.wait()
 
     def set_arm_command(self):
+        # TODO: mutex
         if self.data_manager.status == MotionStatus.TELEOP:
-            if self.motion_space == "JOINT":
-                joint_vel_limit = np.deg2rad(10.0)  # [rad/s]
-                joint_delta_limit = joint_vel_limit * self.env.unwrapped.dt
-                self.motion_manager.joint_pos += np.clip(
-                    self.motion_target - self.motion_manager.joint_pos,
-                    -1 * joint_delta_limit,
-                    joint_delta_limit,
-                )
-                self.motion_manager.forward_kinematics()
-                self.motion_manager.target_se3 = self.motion_manager.current_se3.copy()
-            else:  # if self.motion_space == "POSE":
-                self.motion_manager.inverse_kinematics()
+            self.motion_interpolator.update()
 
     def set_gripper_command(self):
         if self.data_manager.status == MotionStatus.GRASP:

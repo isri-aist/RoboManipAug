@@ -13,11 +13,11 @@ from robo_manip_baselines.common import DataKey, DataManager
 
 
 class AcceptableRegion(object):
-    def __init__(self, time_idx, width, center, convergent_time_idx=None):
+    def __init__(self, time_idx, width, center, convergence_time_idx=None):
         self.time_idx = time_idx
         self.width = width
         self.center = center
-        self.convergent_time_idx = convergent_time_idx
+        self.convergence_time_idx = convergence_time_idx
 
     def make_region_sphere(self, color):
         sphere = o3d.geometry.TriangleMesh.create_sphere(
@@ -43,23 +43,26 @@ class AcceptableRegion(object):
         return sphere
 
     def to_dict(self, annotate: "AnnotateAcceptableRegion"):
-        center_mat = annotate.eef_traj.H[self.time_idx]
-        center_pos = center_mat[0:3, 3]
-        center_rot = center_mat[0:3, 0:3]
-        convergent_mat = annotate.eef_traj.H[self.convergent_time_idx]
-        convergent_pos = convergent_mat[0:3, 3]
-        convergent_rot = convergent_mat[0:3, 0:3]
-        joint_pos = annotate.data_manager.get_data(DataKey.COMMAND_JOINT_POS)[
+        center_eef_mat = annotate.eef_traj.H[self.time_idx]
+        center_joint_pos = annotate.data_manager.get_data(DataKey.COMMAND_JOINT_POS)[
             self.time_idx
         ]
+        convergence_eef_mat = annotate.eef_traj.H[self.convergence_time_idx]
+        convergence_joint_pos = annotate.data_manager.get_data(
+            DataKey.COMMAND_JOINT_POS
+        )[self.convergence_time_idx]
         return {
-            "center": {"pos": center_pos.tolist(), "rot": center_rot.tolist()},
-            "convergent": {
-                "pos": convergent_pos.tolist(),
-                "rot": convergent_rot.tolist(),
+            "center": {
+                "eef_pos": center_eef_mat[0:3, 3].tolist(),
+                "eef_rot": center_eef_mat[0:3, 0:3].tolist(),
+                "joint_pos": center_joint_pos.tolist(),
+            },
+            "convergence": {
+                "pos": convergence_eef_mat[0:3, 3].tolist(),
+                "rot": convergence_eef_mat[0:3, 0:3].tolist(),
+                "joint_pos": convergence_joint_pos.tolist(),
             },
             "radius": float(self.width),
-            "joint_pos": joint_pos.tolist(),
         }
 
 
@@ -352,11 +355,9 @@ class AnnotateAcceptableRegion(object):
 
     def s_callback(self, vis):
         dump_dict = {}
-        eef_offset_pos = self.eef_offset_mat[0:3, 3]
-        eef_offset_rot = self.eef_offset_mat[0:3, 0:3]
         dump_dict["eef_offset"] = {
-            "pos": eef_offset_pos.tolist(),
-            "rot": eef_offset_rot.tolist(),
+            "pos": self.eef_offset_mat[0:3, 3].tolist(),
+            "rot": self.eef_offset_mat[0:3, 0:3].tolist(),
         }
         dump_dict["acceptable_region_list"] = []
         for acceptable_region in self.acceptable_region_list:
