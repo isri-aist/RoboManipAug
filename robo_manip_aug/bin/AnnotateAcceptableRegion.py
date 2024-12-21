@@ -19,19 +19,6 @@ class AcceptableRegion(object):
         self.center = center
         self.convergent_time_idx = convergent_time_idx
 
-    def to_dict(self, eef_traj_mat_list):
-        center_mat = eef_traj_mat_list[self.time_idx]
-        center_pos = center_mat[0:3, 3]
-        rot = center_mat[0:3, 0:3]
-        convergent_mat = eef_traj_mat_list[self.convergent_time_idx]
-        convergent_pos = convergent_mat[0:3, 3]
-        return {
-            "center_pos": center_pos.tolist(),
-            "convergent_pos": convergent_pos.tolist(),
-            "radius": float(self.width),
-            "rot": rot.tolist(),
-        }
-
     def make_region_sphere(self, color):
         sphere = o3d.geometry.TriangleMesh.create_sphere(
             radius=self.width, resolution=8
@@ -55,6 +42,26 @@ class AcceptableRegion(object):
         sphere.transform(self.center)
         return sphere
 
+    def to_dict(self, annotate: "AnnotateAcceptableRegion"):
+        center_mat = annotate.eef_traj.H[self.time_idx]
+        center_pos = center_mat[0:3, 3]
+        center_rot = center_mat[0:3, 0:3]
+        convergent_mat = annotate.eef_traj.H[self.convergent_time_idx]
+        convergent_pos = convergent_mat[0:3, 3]
+        convergent_rot = convergent_mat[0:3, 0:3]
+        joint_pos = annotate.data_manager.get_data(DataKey.COMMAND_JOINT_POS)[
+            self.time_idx
+        ]
+        return {
+            "center": {"pos": center_pos.tolist(), "rot": center_rot.tolist()},
+            "convergent": {
+                "pos": convergent_pos.tolist(),
+                "rot": convergent_rot.tolist(),
+            },
+            "radius": float(self.width),
+            "joint_pos": joint_pos.tolist(),
+        }
+
 
 class AnnotateAcceptableRegion(object):
     def __init__(self):
@@ -74,6 +81,12 @@ class AnnotateAcceptableRegion(object):
     def setup_variables(self):
         self.quit_flag = False
         self.draw_prev_spheres_flag = True
+
+        eef_offset_pos = np.array([0.0, 0.0, 0.15])  # [m]
+        eef_offset_rot = np.identity(3)
+        self.eef_offset_mat = pytrans3d.transformations.transform_from(
+            eef_offset_rot, eef_offset_pos
+        )
 
         self.current_time_idx = 0
         self.next_time_idx = None
@@ -113,16 +126,12 @@ class AnnotateAcceptableRegion(object):
         # Draw EEF trajectory
         measured_eef_pose_seq = self.data_manager.get_data(DataKey.MEASURED_EEF_POSE)
         eef_traj_mat_list = np.empty((self.data_len, 4, 4))
-        offset_pos = np.array([0.0, 0.0, 0.15])  # [m]
-        offset_mat = pytrans3d.transformations.transform_from(
-            np.identity(3), offset_pos
-        )
         for time_idx in range(self.data_len):
             pos = measured_eef_pose_seq[time_idx, 0:3]
             quat = measured_eef_pose_seq[time_idx, 3:7]
             rot = pytrans3d.rotations.matrix_from_quaternion(quat)
             mat = pytrans3d.transformations.transform_from(rot, pos)
-            eef_traj_mat_list[time_idx] = mat @ offset_mat
+            eef_traj_mat_list[time_idx] = mat @ self.eef_offset_mat
         traj_color = [0.0, 0.0, 0.0]
         self.eef_traj = pv.Trajectory(eef_traj_mat_list, c=traj_color)
         self.fig.add_geometry(self.eef_traj.geometries[0])
@@ -343,11 +352,15 @@ class AnnotateAcceptableRegion(object):
 
     def s_callback(self, vis):
         dump_dict = {}
+        eef_offset_pos = self.eef_offset_mat[0:3, 3]
+        eef_offset_rot = self.eef_offset_mat[0:3, 0:3]
+        dump_dict["eef_offset"] = {
+            "pos": eef_offset_pos.tolist(),
+            "rot": eef_offset_rot.tolist(),
+        }
         dump_dict["acceptable_region_list"] = []
         for acceptable_region in self.acceptable_region_list:
-            dump_dict["acceptable_region_list"].append(
-                acceptable_region.to_dict(self.eef_traj.H)
-            )
+            dump_dict["acceptable_region_list"].append(acceptable_region.to_dict(self))
         filename = "annotation_data/{}_Annotation.yaml".format(
             path.splitext(path.basename(self.args.teleop_data_path))[0]
         )
