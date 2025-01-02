@@ -105,7 +105,9 @@ class AnnotateAcceptableRegion(object):
 
     def setup_visualization(self):
         # Initialize figure
-        self.fig = pv.figure("RoboManipAug VisualizeDemo", with_key_callbacks=True)
+        self.fig = pv.figure(
+            "RoboManipAug AnnotateAcceptableRegion", with_key_callbacks=True
+        )
         self.fig.view_init()
 
         # Set key callbacks
