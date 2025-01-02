@@ -144,6 +144,11 @@ class CollectAdditionalDataBase(TeleopBase):
         )
 
     def collect_data(self):
+        eef_offset_se3 = pin.SE3(
+            np.array(self.annotation_data["eef_offset"]["rot"]),
+            np.array(self.annotation_data["eef_offset"]["pos"]),
+        )
+
         for acceptable_region_idx, acceptable_region in enumerate(
             self.annotation_data["acceptable_region_list"]
         ):
@@ -164,10 +169,14 @@ class CollectAdditionalDataBase(TeleopBase):
                 self.motion_interpolator.wait()
 
                 # Move to sampled point
+                eef_se3 = pin.SE3(center_rot, sampled_pos) * eef_offset_se3.inverse()
                 self.motion_interpolator.set_target(
-                    MotionInterpolator.TargetSpace.EEF, pin.SE3(center_rot, sampled_pos)
+                    MotionInterpolator.TargetSpace.EEF, eef_se3
                 )
                 self.motion_interpolator.wait()
+
+                if self.quit_flag:
+                    return
 
     def set_arm_command(self):
         # TODO: mutex

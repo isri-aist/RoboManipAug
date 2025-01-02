@@ -58,8 +58,8 @@ class AcceptableRegion(object):
                 "joint_pos": center_joint_pos.tolist(),
             },
             "convergence": {
-                "pos": convergence_eef_mat[0:3, 3].tolist(),
-                "rot": convergence_eef_mat[0:3, 0:3].tolist(),
+                "eef_pos": convergence_eef_mat[0:3, 3].tolist(),
+                "eef_rot": convergence_eef_mat[0:3, 0:3].tolist(),
                 "joint_pos": convergence_joint_pos.tolist(),
             },
             "radius": float(self.width),

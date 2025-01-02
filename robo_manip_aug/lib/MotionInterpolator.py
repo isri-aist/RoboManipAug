@@ -82,5 +82,6 @@ class MotionInterpolator(object):
         while self.env.unwrapped.get_time() < end_time:
             time.sleep(0.01)
 
+        self.update()
         if clear_target:
             self.clear_target()
