@@ -1,3 +1,4 @@
+from os import path
 import yaml
 import argparse
 import time
@@ -32,7 +33,7 @@ class CollectAdditionalDataBase(TeleopBase):
     def __init__(self):
         super().__init__()
 
-        MotionStatus.TELEOP._name_ = "AUTO_AUGMENTATION"
+        MotionStatus.TELEOP._name_ = "AUGMENTATION"
 
         # Setup data manager for base data
         self.base_data_manager = DataManager(self.env, demo_name=self.demo_name)
@@ -133,9 +134,8 @@ class CollectAdditionalDataBase(TeleopBase):
         self.base_data_manager.setup_sim_world(world_idx)
         obs, info = self.env.reset()
         print(
-            "[{}] data_idx: {}, world_idx: {}".format(
+            "[CollectAdditionalDataBase] demo_name: {}, world_idx: {}".format(
                 self.demo_name,
-                self.data_manager.data_idx,
                 self.data_manager.world_idx,
             )
         )
@@ -228,7 +228,12 @@ class CollectAdditionalDataBase(TeleopBase):
         elif self.data_manager.status == MotionStatus.END:
             if key == ord("s"):
                 # Save data
-                self.save_data()
+                filename = "augmented_data/{}_Augmented.npz".format(
+                    path.splitext(path.basename(self.args.annotation_path))[
+                        0
+                    ].removesuffix("_Annotation")
+                )
+                self.save_data(filename)
                 self.quit_flag = True
             elif key == ord("f"):
                 self.quit_flag = True
