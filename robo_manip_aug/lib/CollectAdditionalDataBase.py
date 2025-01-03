@@ -165,13 +165,14 @@ class CollectAdditionalDataBase(TeleopBase):
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.JOINT,
                     joint_pos[self.env.unwrapped.ik_arm_joint_ids],
+                    vel_limit=np.deg2rad(45.0),
                 )
                 self.motion_interpolator.wait()
 
                 # Move to sampled point
                 eef_se3 = pin.SE3(center_rot, sampled_pos) * eef_offset_se3.inverse()
                 self.motion_interpolator.set_target(
-                    MotionInterpolator.TargetSpace.EEF, eef_se3
+                    MotionInterpolator.TargetSpace.EEF, eef_se3, duration=2.0
                 )
                 self.motion_interpolator.wait()
 
@@ -179,7 +180,6 @@ class CollectAdditionalDataBase(TeleopBase):
                     return
 
     def set_arm_command(self):
-        # TODO: mutex
         if self.data_manager.status == MotionStatus.TELEOP:
             self.motion_interpolator.update()
 
