@@ -42,6 +42,7 @@ class CollectAdditionalDataBase(TeleopBase):
 
         # Setup motion interpolator
         self.motion_interpolator = MotionInterpolator(self.env, self.motion_manager)
+        self.executing_augmented_motion = False
 
     def setup_args(self, parser=None):
         if parser is None:
@@ -84,7 +85,10 @@ class CollectAdditionalDataBase(TeleopBase):
             action = self.motion_manager.get_action()
 
             # Record data
-            if self.data_manager.status == MotionStatus.TELEOP:
+            if (
+                self.data_manager.status == MotionStatus.TELEOP
+                and self.executing_augmented_motion
+            ):
                 self.record_data(obs, action, info)  # noqa: F821
 
             # Step environment
@@ -168,15 +172,19 @@ class CollectAdditionalDataBase(TeleopBase):
                     vel_limit=np.deg2rad(45.0),  # [rad/s]
                 )
                 self.motion_interpolator.wait()
+                time.sleep(1.0)
 
                 # Move to sampled point
                 eef_se3 = pin.SE3(center_rot, sampled_pos) * eef_offset_se3.inverse()
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.EEF,
                     eef_se3,
-                    duration=2.0,  # [s]
+                    duration=1.0,  # [s]
                 )
+                self.executing_augmented_motion = True
                 self.motion_interpolator.wait()
+                self.executing_augmented_motion = False
+                time.sleep(1.0)
 
                 if self.quit_flag:
                     return
