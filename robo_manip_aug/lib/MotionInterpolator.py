@@ -5,7 +5,15 @@ import pinocchio as pin
 
 
 class MotionInterpolator(object):
+    """
+    Motion interpolator.
+
+    The class interpolates target in joint space or end-effector space.
+    """
+
     class TargetSpace(Enum):
+        """Target space."""
+
         JOINT = 0
         EEF = 1
 
