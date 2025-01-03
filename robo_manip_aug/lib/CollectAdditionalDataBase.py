@@ -219,6 +219,9 @@ class CollectAdditionalDataBase(TeleopBase):
             self.teleop_time_idx += 1
             if not self.thread.is_alive():
                 print(
+                    "[CollectAdditionalDataBase] Finish a thread for data collection."
+                )
+                print(
                     "[CollectAdditionalDataBase] Press the 's' key to save the collected data, press the 'f' key to exit without saving."
                 )
                 self.data_manager.go_to_next_status()

@@ -13,11 +13,12 @@ from robo_manip_baselines.common import DataKey, DataManager
 
 
 class AcceptableRegion(object):
-    def __init__(self, time_idx, width, center, convergence_time_idx=None):
+    def __init__(self, time_idx, width, center, convergence_time_idx=None, skip=False):
         self.time_idx = time_idx
         self.width = width
         self.center = center
         self.convergence_time_idx = convergence_time_idx
+        self.skip = skip
 
     def make_region_sphere(self, color):
         sphere = o3d.geometry.TriangleMesh.create_sphere(
@@ -119,6 +120,14 @@ class AnnotateAcceptableRegion(object):
         self.fig.visualizer.register_key_action_callback(265, self.up_callback)
         self.fig.visualizer.register_key_callback(ord("S"), self.s_callback)
         self.fig.visualizer.register_key_callback(ord("V"), self.v_callback)
+
+        print("""[AnnotateAcceptableRegion] Key bindings:
+  - [esc] Quit.
+  - [right-arrow] Save the current acceptable region and proceed to the next one. If [shift] is pressed together, this acceptable region is skipped.
+  - [left-arrow] Discard the current acceptable region and go back one.
+  - [down-arrow/up-arrow] Increase/decrease the radius of the acceptable region. Press [shift] and [ctrl] together to increase/decrease the increment.
+  - [s] Dump acceptable regions to the file.
+  - [v] Toggle whether or not to draw previous acceptable regions.""")
 
         # Load a URDF model of robot
         self.urdf_tm = UrdfTransformManager()
@@ -271,9 +280,8 @@ class AnnotateAcceptableRegion(object):
 
             # Draw region sphere
             if (
-                acceptable_region_idx == len(self.acceptable_region_list)
-                or self.draw_prev_spheres_flag
-            ):
+                self.draw_prev_spheres_flag and not acceptable_region.skip
+            ) or acceptable_region_idx == len(self.acceptable_region_list):
                 region_sphere = acceptable_region.make_region_sphere(
                     region_sphere_color
                 )
@@ -312,6 +320,10 @@ class AnnotateAcceptableRegion(object):
         if self.next_time_idx is None:
             return
 
+        skip = False
+        if mods == 1:  # shift key
+            skip = True
+
         # Store acceptable region
         current_center_mat = self.eef_traj.H[self.current_time_idx]
         self.acceptable_region_list.append(
@@ -319,7 +331,8 @@ class AnnotateAcceptableRegion(object):
                 self.current_time_idx,
                 self.acceptable_width,
                 current_center_mat,
-                self.next_time_idx,
+                convergence_time_idx=self.next_time_idx,
+                skip=skip,
             )
         )
 
@@ -363,6 +376,8 @@ class AnnotateAcceptableRegion(object):
         }
         dump_dict["acceptable_region_list"] = []
         for acceptable_region in self.acceptable_region_list:
+            if acceptable_region.skip:
+                continue
             dump_dict["acceptable_region_list"].append(acceptable_region.to_dict(self))
         filename = "annotation_data/{}_Annotation.yaml".format(
             path.splitext(path.basename(self.args.teleop_data_path))[0]
