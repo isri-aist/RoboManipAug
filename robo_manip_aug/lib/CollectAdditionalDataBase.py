@@ -100,30 +100,8 @@ class CollectAdditionalDataBase(TeleopBase):
 
             # Save data
             if self.save_flag:
-                # Dump to file
-                filename = "augmented_data/{}_Augmented_{:0>3}_{:0>2}.npz".format(
-                    path.splitext(path.basename(self.args.annotation_path))[
-                        0
-                    ].removesuffix("_Annotation"),
-                    self.acceptable_region_idx,
-                    self.sample_idx,
-                )
-                self.save_data(filename)
-
-                # Clear existing motion data
-                all_data_seq = self.data_manager.all_data_seq
-                seq_len = len(all_data_seq[DataKey.TIME])
-                for key in list(all_data_seq.keys()):
-                    if (
-                        isinstance(all_data_seq[key], list)
-                        or (
-                            isinstance(all_data_seq[key], np.ndarray)
-                            and all_data_seq[key].ndim > 0
-                        )
-                    ) and len(all_data_seq[key]) == seq_len:
-                        del all_data_seq[key]
-
                 self.save_flag = False
+                self.save_data()
 
             # Draw images
             self.draw_image(info)
@@ -276,3 +254,44 @@ class CollectAdditionalDataBase(TeleopBase):
                 self.quit_flag = True
         if key == 27:  # escape key
             self.quit_flag = True
+
+    def save_data(self):
+        all_data_seq = self.data_manager.all_data_seq
+        seq_len = len(all_data_seq[DataKey.TIME])
+
+        # Reverse motion data
+        for key in list(all_data_seq.keys()):
+            if key == DataKey.TIME:
+                continue
+            elif (
+                isinstance(all_data_seq[key], list)
+                and len(all_data_seq[key]) == seq_len
+            ):
+                all_data_seq[key].reverse()
+            elif (
+                isinstance(all_data_seq[key], np.ndarray)
+                and all_data_seq[key].ndim > 0
+                and len(all_data_seq[key]) == seq_len
+            ):
+                all_data_seq[key] = all_data_seq[key][::-1]
+
+        # Dump to file
+        filename = "augmented_data/{}_Augmented_{:0>3}_{:0>2}.npz".format(
+            path.splitext(path.basename(self.args.annotation_path))[0].removesuffix(
+                "_Annotation"
+            ),
+            self.acceptable_region_idx,
+            self.sample_idx,
+        )
+        super().save_data(filename)
+
+        # Clear motion data
+        for key in list(all_data_seq.keys()):
+            if (
+                isinstance(all_data_seq[key], list)
+                or (
+                    isinstance(all_data_seq[key], np.ndarray)
+                    and all_data_seq[key].ndim > 0
+                )
+            ) and len(all_data_seq[key]) == seq_len:
+                del all_data_seq[key]
