@@ -9,6 +9,7 @@ import threading
 import pinocchio as pin
 from robo_manip_baselines.common import (
     MotionStatus,
+    DataKey,
     DataManager,
 )
 from robo_manip_baselines.teleop import TeleopBase
@@ -44,7 +45,6 @@ class CollectAdditionalDataBase(TeleopBase):
 
         # Setup motion interpolator
         self.motion_interpolator = MotionInterpolator(self.env, self.motion_manager)
-        self.executing_augmented_motion = False
 
     def setup_args(self, parser=None):
         if parser is None:
@@ -71,6 +71,8 @@ class CollectAdditionalDataBase(TeleopBase):
     def run(self):
         self.reset_flag = True
         self.quit_flag = False
+        self.save_flag = False
+        self.executing_augmented_motion = False
         iteration_duration_list = []
 
         while True:
@@ -91,10 +93,37 @@ class CollectAdditionalDataBase(TeleopBase):
                 self.data_manager.status == MotionStatus.TELEOP
                 and self.executing_augmented_motion
             ):
-                self.record_data(obs, action, info)  # noqa: F821
+                self.record_data(self.obs, action, info)  # noqa: F821
 
             # Step environment
-            obs, _, _, _, info = self.env.step(action)
+            self.obs, _, _, _, info = self.env.step(action)
+
+            # Save data
+            if self.save_flag:
+                # Dump to file
+                filename = "augmented_data/{}_Augmented_{:0>3}_{:0>2}.npz".format(
+                    path.splitext(path.basename(self.args.annotation_path))[
+                        0
+                    ].removesuffix("_Annotation"),
+                    self.acceptable_region_idx,
+                    self.sample_idx,
+                )
+                self.save_data(filename)
+
+                # Clear existing motion data
+                all_data_seq = self.data_manager.all_data_seq
+                seq_len = len(all_data_seq[DataKey.TIME])
+                for key in list(all_data_seq.keys()):
+                    if (
+                        isinstance(all_data_seq[key], list)
+                        or (
+                            isinstance(all_data_seq[key], np.ndarray)
+                            and all_data_seq[key].ndim > 0
+                        )
+                    ) and len(all_data_seq[key]) == seq_len:
+                        del all_data_seq[key]
+
+                self.save_flag = False
 
             # Draw images
             self.draw_image(info)
@@ -138,7 +167,7 @@ class CollectAdditionalDataBase(TeleopBase):
         world_idx = self.base_data_manager.get_data("world_idx").tolist()
         self.data_manager.setup_sim_world(world_idx)
         self.base_data_manager.setup_sim_world(world_idx)
-        obs, info = self.env.reset()
+        self.obs, info = self.env.reset()
         print(
             "[CollectAdditionalDataBase] demo_name: {}, world_idx: {}".format(
                 self.demo_name,
@@ -155,7 +184,7 @@ class CollectAdditionalDataBase(TeleopBase):
             np.array(self.annotation_data["eef_offset"]["pos"]),
         )
 
-        for acceptable_region_idx, acceptable_region in enumerate(
+        for self.acceptable_region_idx, acceptable_region in enumerate(
             self.annotation_data["acceptable_region_list"]
         ):
             # Sample EEF position
@@ -163,21 +192,21 @@ class CollectAdditionalDataBase(TeleopBase):
             center_pos = np.array(acceptable_region["center"]["eef_pos"])
             center_rot = np.array(acceptable_region["center"]["eef_rot"])
             radius = acceptable_region["radius"]
-            sampled_pos_list = sample_points_on_sphere(center_pos, radius, num_points)
+            sample_pos_list = sample_points_on_sphere(center_pos, radius, num_points)
 
-            for sampled_pos in sampled_pos_list:
+            for self.sample_idx, sample_pos in enumerate(sample_pos_list):
                 # Move to convergence point
                 joint_pos = np.array(acceptable_region["convergence"]["joint_pos"])
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.JOINT,
                     joint_pos[self.env.unwrapped.ik_arm_joint_ids],
-                    vel_limit=np.deg2rad(45.0),  # [rad/s]
+                    vel_limit=np.deg2rad(30.0),  # [rad/s]
                 )
                 self.motion_interpolator.wait()
-                time.sleep(1.0)
+                self.wait_until_motion_stop()
 
                 # Move to sampled point
-                eef_se3 = pin.SE3(center_rot, sampled_pos) * eef_offset_se3.inverse()
+                eef_se3 = pin.SE3(center_rot, sample_pos) * eef_offset_se3.inverse()
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.EEF,
                     eef_se3,
@@ -186,10 +215,19 @@ class CollectAdditionalDataBase(TeleopBase):
                 self.executing_augmented_motion = True
                 self.motion_interpolator.wait()
                 self.executing_augmented_motion = False
-                time.sleep(1.0)
+                self.save_flag = True
+                self.wait_until_motion_stop()
 
                 if self.quit_flag:
                     return
+
+    def wait_until_motion_stop(self):
+        joint_vel_thre = 1e-3  # [rad/s]
+        while True:
+            joint_vel = np.linalg.norm(self.motion_manager.get_joint_vel(self.obs))
+            if joint_vel < joint_vel_thre:
+                break
+            time.sleep(self.env.unwrapped.dt)
 
     def set_arm_command(self):
         if self.data_manager.status == MotionStatus.TELEOP:
@@ -231,21 +269,10 @@ class CollectAdditionalDataBase(TeleopBase):
                 print(
                     "[CollectAdditionalDataBase] Finish a thread for data collection."
                 )
-                print(
-                    "[CollectAdditionalDataBase] Press the 's' key to save the collected data, press the 'f' key to exit without saving."
-                )
+                print("[CollectAdditionalDataBase] Press the 'n' key to quit.")
                 self.data_manager.go_to_next_status()
         elif self.data_manager.status == MotionStatus.END:
-            if key == ord("s"):
-                # Save data
-                filename = "augmented_data/{}_Augmented.npz".format(
-                    path.splitext(path.basename(self.args.annotation_path))[
-                        0
-                    ].removesuffix("_Annotation")
-                )
-                self.save_data(filename)
-                self.quit_flag = True
-            elif key == ord("f"):
+            if key == ord("n"):
                 self.quit_flag = True
         if key == 27:  # escape key
             self.quit_flag = True
