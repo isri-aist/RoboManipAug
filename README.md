@@ -11,3 +11,8 @@ $ python bin/AnnotateAcceptableRegion.py teleop_data/MujocoUR5eInsert_env0_000.n
 $ cd robo_manip_aug
 $ python bin/CollectAdditionalDataMujocoUR5eInsert.py --base_demo_path ./teleop_data/MujocoUR5eInsert_env0_000.npz --annotation_path annotation_data/MujocoUR5eInsert_env0_000_Annotation.yaml
 ```
+
+```console
+$ cd robo_manip_aug
+$ python bin/VisualizePointCloud.py env_data/MujocoUR5eCable_SuGaR.ply
+```

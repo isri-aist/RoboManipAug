@@ -178,7 +178,7 @@ class CollectAdditionalDataBase(TeleopBase):
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.JOINT,
                     joint_pos[self.env.unwrapped.ik_arm_joint_ids],
-                    vel_limit=np.deg2rad(30.0),  # [rad/s]
+                    vel_limit=np.deg2rad(20.0),  # [rad/s]
                 )
                 self.motion_interpolator.wait()
                 self.wait_until_motion_stop()
