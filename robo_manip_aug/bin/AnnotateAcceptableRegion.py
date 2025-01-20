@@ -53,8 +53,9 @@ class AcceptableRegion(object):
         return {
             "center": {
                 "time_idx": self.time_idx,
-                "eef_pose": annotate.data_manager.get_single_data(
-                    DataKey.COMMAND_EEF_POSE, self.time_idx
+                "eef_pose": get_pose_from_rot_pos(
+                    annotate.eef_traj.H[self.time_idx][0:3, 0:3],
+                    annotate.eef_traj.H[self.time_idx][0:3, 3],
                 ),
                 "joint_pos": annotate.data_manager.get_single_data(
                     DataKey.COMMAND_JOINT_POS, self.time_idx
@@ -62,8 +63,9 @@ class AcceptableRegion(object):
             },
             "convergence": {
                 "time_idx": self.convergence_time_idx,
-                "eef_pose": annotate.data_manager.get_single_data(
-                    DataKey.COMMAND_EEF_POSE, self.convergence_time_idx
+                "eef_pose": get_pose_from_rot_pos(
+                    annotate.eef_traj.H[self.convergence_time_idx][0:3, 0:3],
+                    annotate.eef_traj.H[self.convergence_time_idx][0:3, 3],
                 ),
                 "joint_pos": annotate.data_manager.get_single_data(
                     DataKey.COMMAND_JOINT_POS, self.convergence_time_idx
