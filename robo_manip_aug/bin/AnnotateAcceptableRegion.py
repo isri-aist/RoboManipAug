@@ -146,7 +146,7 @@ class AnnotateAcceptableRegion(object):
         self.urdf_graph = self.fig.plot_graph(self.urdf_tm, "world", show_visuals=True)
 
         # Draw EEF trajectory
-        eef_traj_mat_list = np.empty((self.data_len, 4, 4))
+        eef_traj_mat_seq = np.empty((self.data_len, 4, 4))
         for time_idx in range(self.data_len):
             eef_pose = self.data_manager.get_single_data(
                 DataKey.COMMAND_EEF_POSE, time_idx
@@ -154,14 +154,14 @@ class AnnotateAcceptableRegion(object):
             eef_mat = pytrans3d.transformations.transform_from(
                 *get_rot_pos_from_pose(eef_pose)
             )
-            eef_traj_mat_list[time_idx] = eef_mat @ self.eef_offset_mat
+            eef_traj_mat_seq[time_idx] = eef_mat @ self.eef_offset_mat
         traj_color = [0.0, 0.0, 0.0]
-        self.eef_traj = pv.Trajectory(eef_traj_mat_list, c=traj_color)
+        self.eef_traj = pv.Trajectory(eef_traj_mat_seq, c=traj_color)
         self.fig.add_geometry(self.eef_traj.geometries[0])
         for time_idx in range(self.data_len):
             waypoint_mat = np.identity(4)
             waypoint_radius = 2e-3  # [m]
-            waypoint_mat = eef_traj_mat_list[time_idx]
+            waypoint_mat = eef_traj_mat_seq[time_idx]
             waypoint_color = [0.0, 1.0, 0.0]
             waypoint_sphere = pv.Sphere(
                 radius=waypoint_radius, A2B=waypoint_mat, c=waypoint_color
