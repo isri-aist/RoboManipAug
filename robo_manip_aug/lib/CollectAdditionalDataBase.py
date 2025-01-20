@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import pickle
 import threading
 import time
 from os import path
@@ -7,7 +8,6 @@ from os import path
 import cv2
 import numpy as np
 import pinocchio as pin
-import yaml
 from robo_manip_baselines.common import (
     DataKey,
     DataManager,
@@ -140,8 +140,8 @@ class CollectAdditionalDataBase(TeleopBase):
         self.base_data_manager.load_data(self.args.base_demo_path)
 
         # Load annotation data
-        with open(self.args.annotation_path, "r") as f:
-            self.annotation_data = yaml.load(f, Loader=yaml.SafeLoader)
+        with open(self.args.annotation_path, "rb") as f:
+            self.annotation_data = pickle.load(f)
 
         # Reset env
         world_idx = self.base_data_manager.get_data("world_idx").tolist()
@@ -160,8 +160,8 @@ class CollectAdditionalDataBase(TeleopBase):
 
     def collect_data(self):
         eef_offset_se3 = pin.SE3(
-            np.array(self.annotation_data["eef_offset"]["rot"]),
-            np.array(self.annotation_data["eef_offset"]["pos"]),
+            self.annotation_data["eef_offset"]["rot"],
+            self.annotation_data["eef_offset"]["pos"],
         )
 
         for self.acceptable_region_idx, acceptable_region in enumerate(
@@ -169,14 +169,14 @@ class CollectAdditionalDataBase(TeleopBase):
         ):
             # Sample EEF position
             num_points = 4
-            center_pos = np.array(acceptable_region["center"]["eef_pos"])
-            center_rot = np.array(acceptable_region["center"]["eef_rot"])
+            center_pos = acceptable_region["center"]["eef_pos"]
+            center_rot = acceptable_region["center"]["eef_rot"]
             radius = acceptable_region["radius"]
             sample_pos_list = sample_points_on_sphere(center_pos, radius, num_points)
 
             for self.sample_idx, sample_pos in enumerate(sample_pos_list):
                 # Move to convergence point
-                joint_pos = np.array(acceptable_region["convergence"]["joint_pos"])
+                joint_pos = acceptable_region["convergence"]["joint_pos"]
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.JOINT,
                     joint_pos[self.env.unwrapped.ik_arm_joint_ids],
