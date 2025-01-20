@@ -172,7 +172,7 @@ class CollectAdditionalDataBase(TeleopBase):
             )
 
             # Sample end-effector position
-            num_points = 4
+            num_points = 8
             center_se3 = get_se3_from_pose(acceptable_region["center"]["eef_pose"])
             radius = acceptable_region["radius"]
             sample_pos_list = sample_points_on_sphere(
@@ -278,7 +278,7 @@ class CollectAdditionalDataBase(TeleopBase):
         # Merge base demo motion
         for key in self.data_manager.all_data_seq.keys():
             self.data_manager.all_data_seq[key] += list(
-                self.base_data_manager.all_data_seq[key][self.aug_end_time_idx :]
+                self.base_data_manager.all_data_seq[key][self.aug_end_time_idx + 1 :]
             )
         self.data_manager.all_data_seq[DataKey.TIME] = list(
             self.env.unwrapped.dt
