@@ -8,14 +8,21 @@ import open3d as o3d
 import pytransform3d as pytrans3d
 import pytransform3d.visualizer as pv
 from pytransform3d.urdf import UrdfTransformManager
-from robo_manip_baselines.common import DataKey, DataManager
+from robo_manip_baselines.common import (
+    DataKey,
+    DataManager,
+    get_pose_from_rot_pos,
+    get_rot_pos_from_pose,
+)
 
 
 class AcceptableRegion(object):
-    def __init__(self, time_idx, width, center, convergence_time_idx=None, skip=False):
+    def __init__(
+        self, time_idx, width, center_mat, convergence_time_idx=None, skip=False
+    ):
         self.time_idx = time_idx
         self.width = width
-        self.center = center
+        self.center_mat = center_mat
         self.convergence_time_idx = convergence_time_idx
         self.skip = skip
 
@@ -23,7 +30,7 @@ class AcceptableRegion(object):
         sphere = o3d.geometry.TriangleMesh.create_sphere(
             radius=self.width, resolution=8
         )
-        sphere.transform(self.center)
+        sphere.transform(self.center_mat)
         sphere_lineset = o3d.geometry.LineSet.create_from_triangle_mesh(sphere)
         sphere_lineset.colors = o3d.utility.Vector3dVector(
             [color] * len(sphere_lineset.lines)
@@ -39,30 +46,28 @@ class AcceptableRegion(object):
             [color] * len(sphere.vertices)
         )
         sphere.compute_vertex_normals()
-        sphere.transform(self.center)
+        sphere.transform(self.center_mat)
         return sphere
 
     def to_dict(self, annotate: "AnnotateAcceptableRegion"):
-        center_eef_mat = annotate.eef_traj.H[self.time_idx]
-        center_joint_pos = annotate.data_manager.get_single_data(
-            DataKey.COMMAND_JOINT_POS, self.time_idx
-        )
-        convergence_eef_mat = annotate.eef_traj.H[self.convergence_time_idx]
-        convergence_joint_pos = annotate.data_manager.get_single_data(
-            DataKey.COMMAND_JOINT_POS, self.convergence_time_idx
-        )
         return {
             "center": {
                 "time_idx": self.time_idx,
-                "eef_pos": center_eef_mat[0:3, 3],
-                "eef_rot": center_eef_mat[0:3, 0:3],
-                "joint_pos": center_joint_pos,
+                "eef_pose": annotate.data_manager.get_single_data(
+                    DataKey.COMMAND_EEF_POSE, self.time_idx
+                ),
+                "joint_pos": annotate.data_manager.get_single_data(
+                    DataKey.COMMAND_JOINT_POS, self.time_idx
+                ),
             },
             "convergence": {
                 "time_idx": self.convergence_time_idx,
-                "eef_pos": convergence_eef_mat[0:3, 3],
-                "eef_rot": convergence_eef_mat[0:3, 0:3],
-                "joint_pos": convergence_joint_pos,
+                "eef_pose": annotate.data_manager.get_single_data(
+                    DataKey.COMMAND_EEF_POSE, self.convergence_time_idx
+                ),
+                "joint_pos": annotate.data_manager.get_single_data(
+                    DataKey.COMMAND_JOINT_POS, self.convergence_time_idx
+                ),
             },
             "radius": self.width,
         }
@@ -139,16 +144,15 @@ class AnnotateAcceptableRegion(object):
         self.urdf_graph = self.fig.plot_graph(self.urdf_tm, "world", show_visuals=True)
 
         # Draw EEF trajectory
-        measured_eef_pose_seq = self.data_manager.get_data_seq(
-            DataKey.MEASURED_EEF_POSE
-        )
         eef_traj_mat_list = np.empty((self.data_len, 4, 4))
         for time_idx in range(self.data_len):
-            pos = measured_eef_pose_seq[time_idx, 0:3]
-            quat = measured_eef_pose_seq[time_idx, 3:7]
-            rot = pytrans3d.rotations.matrix_from_quaternion(quat)
-            mat = pytrans3d.transformations.transform_from(rot, pos)
-            eef_traj_mat_list[time_idx] = mat @ self.eef_offset_mat
+            eef_pose = self.data_manager.get_single_data(
+                DataKey.COMMAND_EEF_POSE, time_idx
+            )
+            eef_mat = pytrans3d.transformations.transform_from(
+                *get_rot_pos_from_pose(eef_pose)
+            )
+            eef_traj_mat_list[time_idx] = eef_mat @ self.eef_offset_mat
         traj_color = [0.0, 0.0, 0.0]
         self.eef_traj = pv.Trajectory(eef_traj_mat_list, c=traj_color)
         self.fig.add_geometry(self.eef_traj.geometries[0])
@@ -187,8 +191,8 @@ class AnnotateAcceptableRegion(object):
             time.sleep(0.01)
 
     def update_once(self):
-        measured_joint_pos = self.data_manager.get_single_data(
-            DataKey.MEASURED_JOINT_POS, self.current_time_idx
+        joint_pos = self.data_manager.get_single_data(
+            DataKey.COMMAND_JOINT_POS, self.current_time_idx
         )
 
         # Set arm joints
@@ -201,7 +205,7 @@ class AnnotateAcceptableRegion(object):
             "wrist_3_joint",
         ]
         for joint_idx, joint_name in enumerate(arm_joint_name_list):
-            self.urdf_tm.set_joint(joint_name, measured_joint_pos[joint_idx])
+            self.urdf_tm.set_joint(joint_name, joint_pos[joint_idx])
 
         # Set gripper joints
         gripper_joint_name_list = [
@@ -217,7 +221,7 @@ class AnnotateAcceptableRegion(object):
             if "follower" in joint_name:
                 scale = -1.0
             self.urdf_tm.set_joint(
-                joint_name, np.deg2rad(scale * measured_joint_pos[-1] / 255.0 * 45.0)
+                joint_name, np.deg2rad(scale * joint_pos[-1] / 255.0 * 45.0)
             )
 
         self.urdf_graph.set_data()
@@ -373,10 +377,9 @@ class AnnotateAcceptableRegion(object):
 
     def s_callback(self, vis):
         dump_dict = {}
-        dump_dict["eef_offset"] = {
-            "pos": self.eef_offset_mat[0:3, 3],
-            "rot": self.eef_offset_mat[0:3, 0:3],
-        }
+        dump_dict["eef_offset_pose"] = get_pose_from_rot_pos(
+            self.eef_offset_mat[0:3, 0:3], self.eef_offset_mat[0:3, 3]
+        )
         dump_dict["acceptable_region_list"] = []
         for acceptable_region in self.acceptable_region_list:
             if acceptable_region.skip:

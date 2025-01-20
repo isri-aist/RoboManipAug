@@ -12,6 +12,7 @@ from robo_manip_baselines.common import (
     DataKey,
     DataManager,
     Phase,
+    get_se3_from_pose,
 )
 from robo_manip_baselines.teleop import TeleopBase
 
@@ -160,10 +161,7 @@ class CollectAdditionalDataBase(TeleopBase):
         )
 
     def collect_data(self):
-        eef_offset_se3 = pin.SE3(
-            self.annotation_data["eef_offset"]["rot"],
-            self.annotation_data["eef_offset"]["pos"],
-        )
+        eef_offset_se3 = get_se3_from_pose(self.annotation_data["eef_offset_pose"])
 
         for self.acceptable_region_idx, acceptable_region in enumerate(
             self.annotation_data["acceptable_region_list"]
@@ -175,10 +173,11 @@ class CollectAdditionalDataBase(TeleopBase):
 
             # Sample end-effector position
             num_points = 4
-            center_pos = acceptable_region["center"]["eef_pos"]
-            center_rot = acceptable_region["center"]["eef_rot"]
+            center_se3 = get_se3_from_pose(acceptable_region["center"]["eef_pose"])
             radius = acceptable_region["radius"]
-            sample_pos_list = sample_points_on_sphere(center_pos, radius, num_points)
+            sample_pos_list = sample_points_on_sphere(
+                center_se3.translation, radius, num_points
+            )
 
             for self.sample_idx, sample_pos in enumerate(sample_pos_list):
                 # Move to convergence point
@@ -192,7 +191,9 @@ class CollectAdditionalDataBase(TeleopBase):
                 self.wait_until_motion_stop()
 
                 # Move to sampled point
-                eef_se3 = pin.SE3(center_rot, sample_pos) * eef_offset_se3.inverse()
+                eef_se3 = (
+                    pin.SE3(center_se3.rotation, sample_pos) * eef_offset_se3.inverse()
+                )
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.EEF,
                     eef_se3,
