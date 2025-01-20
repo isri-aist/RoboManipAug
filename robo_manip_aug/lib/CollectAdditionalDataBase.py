@@ -198,6 +198,7 @@ class CollectAdditionalDataBase(TeleopBase):
                     eef_se3,
                     duration=1.0,  # [s]
                 )
+                self.aug_end_time_idx = acceptable_region["convergence"]["time_idx"]
                 self.executing_augmented_motion = True
                 self.motion_interpolator.wait()
                 self.executing_augmented_motion = False
@@ -271,6 +272,16 @@ class CollectAdditionalDataBase(TeleopBase):
     def save_data(self):
         # Reverse motion data
         self.data_manager.reverse_data()
+
+        # Merge base demo motion
+        for key in self.data_manager.all_data_seq.keys():
+            self.data_manager.all_data_seq[key] += list(
+                self.base_data_manager.all_data_seq[key][self.aug_end_time_idx :]
+            )
+        self.data_manager.all_data_seq[DataKey.TIME] = list(
+            self.env.unwrapped.dt
+            * np.arange(len(self.data_manager.all_data_seq[DataKey.TIME]))
+        )
 
         # Dump to file
         filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/env{:0>1}/{}_Augmented_{:0>3}_{:0>2}.hdf5".format(

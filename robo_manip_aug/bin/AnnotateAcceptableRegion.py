@@ -53,11 +53,13 @@ class AcceptableRegion(object):
         )
         return {
             "center": {
+                "time_idx": self.time_idx,
                 "eef_pos": center_eef_mat[0:3, 3],
                 "eef_rot": center_eef_mat[0:3, 0:3],
                 "joint_pos": center_joint_pos,
             },
             "convergence": {
+                "time_idx": self.convergence_time_idx,
                 "eef_pos": convergence_eef_mat[0:3, 3],
                 "eef_rot": convergence_eef_mat[0:3, 0:3],
                 "joint_pos": convergence_joint_pos,
