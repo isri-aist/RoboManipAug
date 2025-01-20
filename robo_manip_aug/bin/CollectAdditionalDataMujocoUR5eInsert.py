@@ -13,19 +13,13 @@ class CollectAdditionalDataMujocoUR5eInsert(CollectAdditionalDataBase):
         )
         self.demo_name = self.args.demo_name or "MujocoUR5eInsert"
 
-    def set_arm_command(self):
-        if self.data_manager.status in (MotionStatus.PRE_REACH, MotionStatus.REACH):
-            target_pos = self.env.unwrapped.get_body_pose("peg")[0:3]
-            if self.data_manager.status == MotionStatus.PRE_REACH:
-                target_pos[2] = 1.1  # [m]
-            elif self.data_manager.status == MotionStatus.REACH:
-                target_pos[2] = 1.03  # [m]
-            self.motion_manager.target_se3 = pin.SE3(
-                np.diag([-1.0, 1.0, -1.0]), target_pos
+    def set_gripper_command(self):
+        if self.phase_manager.phase == Phase.GRASP:
+            self.motion_manager.set_command_data(
+                DataKey.COMMAND_GRIPPER_JOINT_POS, np.array([170.0])
             )
-            self.motion_manager.inverse_kinematics()
         else:
-            super().set_arm_command()
+            super().set_gripper_command()
 
 
 if __name__ == "__main__":

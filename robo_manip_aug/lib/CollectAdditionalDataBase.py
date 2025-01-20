@@ -36,7 +36,7 @@ class CollectAdditionalDataBase(TeleopBase):
     def __init__(self):
         super().__init__()
 
-        self.data_manager.general_info["format"] = "RoboManipBaselines-AugmentedData"
+        self.data_manager.meta_data["format"] = "RoboManipBaselines-AugmentedData"
 
         MotionStatus.TELEOP._name_ = "AUGMENTATION"
 
