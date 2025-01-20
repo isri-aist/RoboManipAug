@@ -17,7 +17,6 @@ requires-python = ">= 3.8"
 dependencies = [
   "pytransform3d[all]",
   "numpy<2.0.0", # required for pytransform3d
-  "pyyaml",
 ]
 dynamic = ["version"]
 

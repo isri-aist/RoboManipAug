@@ -2,7 +2,7 @@ from os import path
 import time
 import argparse
 import numpy as np
-import yaml
+import pickle
 
 import open3d as o3d
 import pytransform3d as pytrans3d
@@ -45,25 +45,25 @@ class AcceptableRegion(object):
 
     def to_dict(self, annotate: "AnnotateAcceptableRegion"):
         center_eef_mat = annotate.eef_traj.H[self.time_idx]
-        center_joint_pos = annotate.data_manager.get_data(DataKey.COMMAND_JOINT_POS)[
-            self.time_idx
-        ]
+        center_joint_pos = annotate.data_manager.get_single_data(
+            DataKey.COMMAND_JOINT_POS, self.time_idx
+        )
         convergence_eef_mat = annotate.eef_traj.H[self.convergence_time_idx]
-        convergence_joint_pos = annotate.data_manager.get_data(
-            DataKey.COMMAND_JOINT_POS
-        )[self.convergence_time_idx]
+        convergence_joint_pos = annotate.data_manager.get_single_data(
+            DataKey.COMMAND_JOINT_POS, self.convergence_time_idx
+        )
         return {
             "center": {
-                "eef_pos": center_eef_mat[0:3, 3].tolist(),
-                "eef_rot": center_eef_mat[0:3, 0:3].tolist(),
-                "joint_pos": center_joint_pos.tolist(),
+                "eef_pos": center_eef_mat[0:3, 3],
+                "eef_rot": center_eef_mat[0:3, 0:3],
+                "joint_pos": center_joint_pos,
             },
             "convergence": {
-                "eef_pos": convergence_eef_mat[0:3, 3].tolist(),
-                "eef_rot": convergence_eef_mat[0:3, 0:3].tolist(),
-                "joint_pos": convergence_joint_pos.tolist(),
+                "eef_pos": convergence_eef_mat[0:3, 3],
+                "eef_rot": convergence_eef_mat[0:3, 0:3],
+                "joint_pos": convergence_joint_pos,
             },
-            "radius": float(self.width),
+            "radius": self.width,
         }
 
 
@@ -100,7 +100,7 @@ class AnnotateAcceptableRegion(object):
     def setup_data(self):
         self.data_manager = DataManager(env=None)
         self.data_manager.load_data(self.args.teleop_data_path)
-        time_seq = self.data_manager.get_data(DataKey.TIME)
+        time_seq = self.data_manager.get_data_seq(DataKey.TIME)
         self.data_len = len(time_seq)
         self.dt = np.mean(time_seq[1:] - time_seq[:-1])
 
@@ -138,7 +138,9 @@ class AnnotateAcceptableRegion(object):
         self.urdf_graph = self.fig.plot_graph(self.urdf_tm, "world", show_visuals=True)
 
         # Draw EEF trajectory
-        measured_eef_pose_seq = self.data_manager.get_data(DataKey.MEASURED_EEF_POSE)
+        measured_eef_pose_seq = self.data_manager.get_data_seq(
+            DataKey.MEASURED_EEF_POSE
+        )
         eef_traj_mat_list = np.empty((self.data_len, 4, 4))
         for time_idx in range(self.data_len):
             pos = measured_eef_pose_seq[time_idx, 0:3]
@@ -371,19 +373,19 @@ class AnnotateAcceptableRegion(object):
     def s_callback(self, vis):
         dump_dict = {}
         dump_dict["eef_offset"] = {
-            "pos": self.eef_offset_mat[0:3, 3].tolist(),
-            "rot": self.eef_offset_mat[0:3, 0:3].tolist(),
+            "pos": self.eef_offset_mat[0:3, 3],
+            "rot": self.eef_offset_mat[0:3, 0:3],
         }
         dump_dict["acceptable_region_list"] = []
         for acceptable_region in self.acceptable_region_list:
             if acceptable_region.skip:
                 continue
             dump_dict["acceptable_region_list"].append(acceptable_region.to_dict(self))
-        filename = "annotation_data/{}_Annotation.yaml".format(
+        filename = "annotation_data/{}_Annotation.pkl".format(
             path.splitext(path.basename(self.args.teleop_data_path))[0]
         )
-        with open(filename, "w") as f:
-            yaml.dump(dump_dict, f)
+        with open(filename, "wb") as f:
+            pickle.dump(dump_dict, f)
         print(
             "[AnnotateAcceptableRegion] Save the annotation data to {}".format(filename)
         )
