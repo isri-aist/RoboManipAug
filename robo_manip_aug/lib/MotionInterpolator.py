@@ -1,5 +1,6 @@
 import time
 from enum import Enum
+
 import numpy as np
 import pinocchio as pin
 

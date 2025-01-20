@@ -1,6 +1,6 @@
 import argparse
-import open3d as o3d
 
+import open3d as o3d
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -1,5 +1,6 @@
-from setuptools import setup
 from distutils.util import convert_path
+
+from setuptools import setup
 
 # https://stackoverflow.com/a/24517154
 main_ns = {}

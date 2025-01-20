@@ -1,14 +1,13 @@
-from os import path
-import time
 import argparse
-import numpy as np
 import pickle
+import time
+from os import path
 
+import numpy as np
 import open3d as o3d
 import pytransform3d as pytrans3d
-from pytransform3d.urdf import UrdfTransformManager
 import pytransform3d.visualizer as pv
-
+from pytransform3d.urdf import UrdfTransformManager
 from robo_manip_baselines.common import DataKey, DataManager
 
 
