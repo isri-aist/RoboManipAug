@@ -270,16 +270,7 @@ class CollectAdditionalDataBase(TeleopBase):
 
     def save_data(self):
         # Reverse motion data
-        all_data_seq = self.data_manager.all_data_seq
-        for key in list(all_data_seq.keys()):
-            if key == DataKey.TIME:
-                continue
-            elif isinstance(all_data_seq[key], list):
-                all_data_seq[key].reverse()
-            else:
-                raise ValueError(
-                    f"[CollectAdditionalDataBase] Unsupported type of data sequence: {type(all_data_seq[key])}"
-                )
+        self.data_manager.reverse_data()
 
         # Dump to file
         filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/env{:0>1}/{}_Augmented_{:0>3}_{:0>2}.hdf5".format(
