@@ -168,6 +168,11 @@ class CollectAdditionalDataBase(TeleopBase):
         for self.acceptable_region_idx, acceptable_region in enumerate(
             self.annotation_data["acceptable_region_list"]
         ):
+            print(
+                "[CollectAdditionalDataBase] Collect data from acceptable region: "
+                f"{self.acceptable_region_idx+1} / {len(self.annotation_data['acceptable_region_list'])}"
+            )
+
             # Sample end-effector position
             num_points = 4
             center_pos = acceptable_region["center"]["eef_pos"]
@@ -277,7 +282,10 @@ class CollectAdditionalDataBase(TeleopBase):
                 )
 
         # Dump to file
-        filename = "augmented_data/{}_Augmented_{:0>3}_{:0>2}.hdf5".format(
+        filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/env{:0>1}/{}_Augmented_{:0>3}_{:0>2}.hdf5".format(
+            self.demo_name,
+            self.datetime_now,
+            self.data_manager.world_idx,
             path.splitext(path.basename(self.args.annotation_path))[0].removesuffix(
                 "_Annotation"
             ),
