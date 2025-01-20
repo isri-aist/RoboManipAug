@@ -3,6 +3,7 @@ from enum import Enum
 
 import numpy as np
 import pinocchio as pin
+from robo_manip_baselines.common import DataKey
 
 
 class MotionInterpolator(object):
@@ -74,15 +75,16 @@ class MotionInterpolator(object):
         )
         if self.target_space == self.TargetSpace.JOINT:
             delta_state = current_ratio * (self.target_state - self.start_state)
-            self.motion_manager.joint_pos = self.start_state + delta_state
-            self.motion_manager.forward_kinematics()
-            self.motion_manager.target_se3 = self.motion_manager.current_se3.copy()
+            self.motion_manager.set_command_data(
+                DataKey.COMMAND_JOINT_POS, self.start_state + delta_state
+            )
         elif self.target_space == self.TargetSpace.EEF:
             delta_state = pin.exp(
                 current_ratio * pin.log(self.start_state.actInv(self.target_state))
             )
-            self.motion_manager.target_se3 = self.start_state * delta_state
-            self.motion_manager.inverse_kinematics()
+            self.motion_manager.set_command_data(
+                DataKey.COMMAND_EEF_POSE, self.start_state * delta_state
+            )
 
     def wait(self, clear_target=True):
         if self.target_state is None:

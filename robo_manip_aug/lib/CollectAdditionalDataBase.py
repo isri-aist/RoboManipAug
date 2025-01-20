@@ -11,7 +11,7 @@ import pinocchio as pin
 from robo_manip_baselines.common import (
     DataKey,
     DataManager,
-    MotionStatus,
+    Phase,
 )
 from robo_manip_baselines.teleop import TeleopBase
 
@@ -19,6 +19,7 @@ from robo_manip_aug import MotionInterpolator
 
 
 def sample_points_on_sphere(center, radius, num_points):
+    """Sample points from the surface of the sphere."""
     phi = np.random.uniform(0, 2 * np.pi, num_points)
     cos_theta = np.random.uniform(-1, 1, num_points)
     theta = np.arccos(cos_theta)
@@ -38,12 +39,9 @@ class CollectAdditionalDataBase(TeleopBase):
 
         self.data_manager.meta_data["format"] = "RoboManipBaselines-AugmentedData"
 
-        MotionStatus.TELEOP._name_ = "AUGMENTATION"
-
         # Setup data manager for base data
         self.base_data_manager = DataManager(self.env, demo_name=self.demo_name)
         self.base_data_manager.setup_camera_info()
-        self.datetime_now = datetime.datetime.now()
 
         # Setup motion interpolator
         self.motion_interpolator = MotionInterpolator(self.env, self.motion_manager)
@@ -85,14 +83,15 @@ class CollectAdditionalDataBase(TeleopBase):
                 self.reset()
                 self.reset_flag = False
 
-            # Get action
-            self.set_arm_command()
-            self.set_gripper_command()
-            action = self.motion_manager.get_action()
+            # Set command
+            self.set_command()
+
+            # Set action
+            action = self.motion_manager.get_command_data(DataKey.COMMAND_JOINT_POS)
 
             # Record data
             if (
-                self.data_manager.status == MotionStatus.TELEOP
+                self.phase_manager.phase == Phase.TELEOP
                 and self.executing_augmented_motion
             ):
                 self.record_data(self.obs, action, info)  # noqa: F821
@@ -112,13 +111,13 @@ class CollectAdditionalDataBase(TeleopBase):
             if self.args.enable_3d_plot:
                 self.draw_point_cloud(info)
 
-            # Manage status
-            self.manage_status()
+            # Manage phase
+            self.manage_phase()
             if self.quit_flag:
                 break
 
             iteration_duration = time.time() - iteration_start_time
-            if self.data_manager.status == MotionStatus.TELEOP:
+            if self.phase_manager.phase == Phase.TELEOP:
                 iteration_duration_list.append(iteration_duration)
             if iteration_duration < self.env.unwrapped.dt:
                 time.sleep(self.env.unwrapped.dt - iteration_duration)
@@ -128,6 +127,7 @@ class CollectAdditionalDataBase(TeleopBase):
     def reset(self):
         # Reset managers
         self.motion_manager.reset()
+        self.phase_manager.reset()
         self.data_manager.reset()
         self.base_data_manager.reset()
 
@@ -143,11 +143,12 @@ class CollectAdditionalDataBase(TeleopBase):
         with open(self.args.annotation_path, "rb") as f:
             self.annotation_data = pickle.load(f)
 
-        # Reset env
-        world_idx = self.base_data_manager.get_data("world_idx").tolist()
-        self.data_manager.setup_sim_world(world_idx)
-        self.base_data_manager.setup_sim_world(world_idx)
+        # Reset environment
+        world_idx = self.base_data_manager.get_meta_data("world_idx")
+        self.data_manager.setup_env_world(world_idx)
+        self.base_data_manager.world_idx = self.data_manager.world_idx
         self.obs, info = self.env.reset()
+
         print(
             "[CollectAdditionalDataBase] demo_name: {}, world_idx: {}".format(
                 self.demo_name,
@@ -167,7 +168,7 @@ class CollectAdditionalDataBase(TeleopBase):
         for self.acceptable_region_idx, acceptable_region in enumerate(
             self.annotation_data["acceptable_region_list"]
         ):
-            # Sample EEF position
+            # Sample end-effector position
             num_points = 4
             center_pos = acceptable_region["center"]["eef_pos"]
             center_rot = acceptable_region["center"]["eef_rot"]
@@ -179,7 +180,7 @@ class CollectAdditionalDataBase(TeleopBase):
                 joint_pos = acceptable_region["convergence"]["joint_pos"]
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.JOINT,
-                    joint_pos[self.env.unwrapped.ik_arm_joint_ids],
+                    joint_pos,
                     vel_limit=np.deg2rad(20.0),  # [rad/s]
                 )
                 self.motion_interpolator.wait()
@@ -204,81 +205,79 @@ class CollectAdditionalDataBase(TeleopBase):
     def wait_until_motion_stop(self):
         joint_vel_thre = 1e-3  # [rad/s]
         while True:
-            joint_vel = np.linalg.norm(self.motion_manager.get_joint_vel(self.obs))
+            joint_vel = np.linalg.norm(
+                self.motion_manager.get_measured_data(
+                    DataKey.MEASURED_JOINT_VEL, self.obs
+                )
+            )
             if joint_vel < joint_vel_thre:
                 break
             time.sleep(self.env.unwrapped.dt)
 
     def set_arm_command(self):
-        if self.data_manager.status == MotionStatus.TELEOP:
+        if self.phase_manager.phase == Phase.TELEOP:
             self.motion_interpolator.update()
 
     def set_gripper_command(self):
-        if self.data_manager.status == MotionStatus.GRASP:
-            self.motion_manager.gripper_pos = self.env.action_space.high[
-                self.env.unwrapped.gripper_action_idx
-            ]
+        if self.phase_manager.phase == Phase.GRASP:
+            self.motion_manager.set_command_data(
+                DataKey.COMMAND_GRIPPER_JOINT_POS,
+                self.env.action_space.high[self.env.unwrapped.gripper_joint_idxes],
+            )
 
-    def manage_status(self):
+    def manage_phase(self):
         key = cv2.waitKey(1)
-        if self.data_manager.status == MotionStatus.INITIAL:
+        if self.phase_manager.phase == Phase.INITIAL:
             if key == ord("n"):
-                self.data_manager.go_to_next_status()
-        elif self.data_manager.status == MotionStatus.PRE_REACH:
+                self.phase_manager.set_next_phase()
+        elif self.phase_manager.phase == Phase.PRE_REACH:
             pre_reach_duration = 0.7  # [s]
-            if self.data_manager.status_elapsed_duration > pre_reach_duration:
-                self.data_manager.go_to_next_status()
-        elif self.data_manager.status == MotionStatus.REACH:
+            if self.phase_manager.get_phase_elapsed_duration() > pre_reach_duration:
+                self.phase_manager.set_next_phase()
+        elif self.phase_manager.phase == Phase.REACH:
             reach_duration = 0.3  # [s]
-            if self.data_manager.status_elapsed_duration > reach_duration:
+            if self.phase_manager.get_phase_elapsed_duration() > reach_duration:
                 print(
                     "[CollectAdditionalDataBase] Press the 'n' key to start data collection."
                 )
-                self.data_manager.go_to_next_status()
-        elif self.data_manager.status == MotionStatus.GRASP:
+                self.phase_manager.set_next_phase()
+        elif self.phase_manager.phase == Phase.GRASP:
             if key == ord("n"):
                 self.teleop_time_idx = 0
                 self.thread = threading.Thread(target=self.collect_data)
                 self.thread.start()
                 self.thread.join(0.1)
                 print("[CollectAdditionalDataBase] Start a thread for data collection.")
-                self.data_manager.go_to_next_status()
-        elif self.data_manager.status == MotionStatus.TELEOP:
+                self.phase_manager.set_next_phase()
+        elif self.phase_manager.phase == Phase.TELEOP:
             self.teleop_time_idx += 1
             if not self.thread.is_alive():
                 print(
                     "[CollectAdditionalDataBase] Finish a thread for data collection."
                 )
                 print("[CollectAdditionalDataBase] Press the 'n' key to quit.")
-                self.data_manager.go_to_next_status()
-        elif self.data_manager.status == MotionStatus.END:
+                self.phase_manager.set_next_phase()
+        elif self.phase_manager.phase == Phase.END:
             if key == ord("n"):
                 self.quit_flag = True
         if key == 27:  # escape key
             self.quit_flag = True
 
     def save_data(self):
-        all_data_seq = self.data_manager.all_data_seq
-        seq_len = len(all_data_seq[DataKey.TIME])
-
         # Reverse motion data
+        all_data_seq = self.data_manager.all_data_seq
         for key in list(all_data_seq.keys()):
             if key == DataKey.TIME:
                 continue
-            elif (
-                isinstance(all_data_seq[key], list)
-                and len(all_data_seq[key]) == seq_len
-            ):
+            elif isinstance(all_data_seq[key], list):
                 all_data_seq[key].reverse()
-            elif (
-                isinstance(all_data_seq[key], np.ndarray)
-                and all_data_seq[key].ndim > 0
-                and len(all_data_seq[key]) == seq_len
-            ):
-                all_data_seq[key] = all_data_seq[key][::-1]
+            else:
+                raise ValueError(
+                    f"[CollectAdditionalDataBase] Unsupported type of data sequence: {type(all_data_seq[key])}"
+                )
 
         # Dump to file
-        filename = "augmented_data/{}_Augmented_{:0>3}_{:0>2}.npz".format(
+        filename = "augmented_data/{}_Augmented_{:0>3}_{:0>2}.hdf5".format(
             path.splitext(path.basename(self.args.annotation_path))[0].removesuffix(
                 "_Annotation"
             ),
@@ -288,12 +287,4 @@ class CollectAdditionalDataBase(TeleopBase):
         super().save_data(filename)
 
         # Clear motion data
-        for key in list(all_data_seq.keys()):
-            if (
-                isinstance(all_data_seq[key], list)
-                or (
-                    isinstance(all_data_seq[key], np.ndarray)
-                    and all_data_seq[key].ndim > 0
-                )
-            ) and len(all_data_seq[key]) == seq_len:
-                del all_data_seq[key]
+        self.data_manager.reset()
