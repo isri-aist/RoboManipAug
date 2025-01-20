@@ -189,6 +189,7 @@ class CollectAdditionalDataBase(TeleopBase):
                 )
                 self.motion_interpolator.wait()
                 self.wait_until_motion_stop()
+                time.sleep(0.5)  # [s]
 
                 # Move to sampled point
                 eef_se3 = (
