@@ -13,6 +13,7 @@ $ pip install -e .
 ```
 
 ## Examples
+### Data
 Collect single data by teleoperation:
 ```console
 $ cd robo_manip_baselines/teleop
@@ -43,6 +44,7 @@ $ cd robo_manip_baselines/teleop
 $ python ./bin/TeleopMujocoUR5eInsert.py --replay_log ../../../RoboManipAug/robo_manip_aug/augmented_data/sample/env2/MujocoUR5eInsert_base_demo_Augmented_000_00.hdf5 --replay_keys command_eef_pose_rel
 ```
 
+### Policy
 Train ACT policy:
 ```console
 $ cd robo_manip_baselines/act
@@ -55,8 +57,15 @@ $ cd robo_manip_baselines/act
 $ python ./bin/rollout/RolloutActMujocoUR5eInsert.py --checkpoint ./checkpoint/Act_MujocoUR5eInsert_RoboManipAug/policy_last.ckpt --world_idx 2
 ```
 
+### Environment
+Extract images for learning 3D gaussian splatting from teleoperation data:
+```console
+$ cd robo_manip_aug
+$ python ./bin/ExtractImagesFromData.py <path_to_hdf5> --out_dir ./env_data/MujocoUR5eInsert
+```
+
 Visualize environment point cloud with a 3D viewer:
 ```console
 $ cd robo_manip_aug
-$ python ./bin/VisualizePointCloud.py ./env_data/MujocoUR5eCable_SuGaR.ply
+$ python ./bin/VisualizePointCloud.py ./env_data/MujocoUR5eInsert_SuGaR.ply
 ```
