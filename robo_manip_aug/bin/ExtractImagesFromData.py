@@ -12,7 +12,9 @@ class ExtractImagesFromData(object):
         self.setup_data()
 
     def setup_args(self):
-        parser = argparse.ArgumentParser()
+        parser = argparse.ArgumentParser(
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
         parser.add_argument("teleop_data_path", type=str)
         parser.add_argument("--out_dir", type=str, default="env_data")
         parser.add_argument("--camera_name", type=str, default="hand")

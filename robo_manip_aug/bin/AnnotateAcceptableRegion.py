@@ -86,8 +86,11 @@ class AnnotateAcceptableRegion(object):
         self.setup_visualization()
 
     def setup_args(self):
-        parser = argparse.ArgumentParser()
+        parser = argparse.ArgumentParser(
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
         parser.add_argument("teleop_data_path", type=str)
+        parser.add_argument("--annotation_path", type=str, default=None)
         self.args = parser.parse_args()
 
     def setup_variables(self):
@@ -179,6 +182,35 @@ class AnnotateAcceptableRegion(object):
         self.acceptable_width = 0.04  # [m]
         self.acceptable_sphere_lineset = None
         self.update_acceptable_sphere()
+
+        # Load annotation data
+        if self.args.annotation_path is not None:
+            with open(self.args.annotation_path, "rb") as f:
+                annotation_data = pickle.load(f)
+
+            for acceptable_region_idx, acceptable_region in enumerate(
+                annotation_data["acceptable_region_list"]
+            ):
+                self.current_time_idx = acceptable_region["center"]["time_idx"]
+                self.acceptable_width = acceptable_region["radius"]
+                self.update_acceptable_sphere()
+
+                # Store acceptable region
+                current_center_mat = self.eef_traj.H[self.current_time_idx]
+                self.acceptable_region_list.append(
+                    AcceptableRegion(
+                        self.current_time_idx,
+                        self.acceptable_width,
+                        current_center_mat,
+                        convergence_time_idx=self.next_time_idx,
+                        skip=False,
+                    )
+                )
+
+                # Increment time index
+                self.current_time_idx = self.next_time_idx
+
+            self.update_acceptable_sphere()
 
     def run(self):
         while not self.quit_flag:

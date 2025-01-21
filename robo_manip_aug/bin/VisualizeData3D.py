@@ -29,7 +29,9 @@ class VisualizeData3D(object):
         self.setup_visualization()
 
     def setup_args(self):
-        parser = argparse.ArgumentParser()
+        parser = argparse.ArgumentParser(
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
         parser.add_argument("teleop_data_dir", type=str)
         parser.add_argument(
             "--base_demo_path",

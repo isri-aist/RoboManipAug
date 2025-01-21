@@ -3,7 +3,9 @@ import argparse
 import open3d as o3d
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument("ply_path", type=str)
     args = parser.parse_args()
 
