@@ -13,40 +13,46 @@ $ pip install -e .
 ```
 
 ## Examples
+Collect single data by teleoperation:
+```console
+$ cd robo_manip_baselines/teleop
+$ python bin/TeleopMujocoUR5eInsert.py --world_idx_list 2
+```
+
 Annotate acceptable regions of end-effectors in data augmentation:
 ```console
 $ cd robo_manip_aug
-$ python ./bin/AnnotateAcceptableRegion.py ./teleop_data/sample/MujocoUR5eInsert_env2_000.hdf5
+$ python ./bin/AnnotateAcceptableRegion.py ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5
 ```
 
 Collect additional data within the acceptable regions in the simulation:
 ```console
 $ cd robo_manip_aug
-$ python ./bin/CollectAdditionalDataMujocoUR5eInsert.py --base_demo_path ./teleop_data/sample/MujocoUR5eInsert_env2_000.hdf5 --annotation_path ./annotation_data/sample/MujocoUR5eInsert_env2_000_Annotation.pkl
+$ python ./bin/CollectAdditionalDataMujocoUR5eInsert.py --base_demo_path ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 --annotation_path ./annotation_data/sample/MujocoUR5eInsert_base_demo_Annotation.pkl
 ```
 
 Visualize the trajectories of the collected data with a 3D viewer:
 ```console
 $ cd robo_manip_aug
-$ python ./bin/VisualizeData3D.py ./augmented_data/sample/ --base_demo_path ./teleop_data/sample/MujocoUR5eInsert_env2_000.hdf5
+$ python ./bin/VisualizeData3D.py ./augmented_data/sample/ --base_demo_path ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5
 ```
 
 Replay the augumented data:
 ```console
 $ cd robo_manip_baselines/teleop
-$ python ./bin/TeleopMujocoUR5eInsert.py --replay_log ../../../RoboManipAug/robo_manip_aug/augmented_data/sample/env2/MujocoUR5eInsert_env2_000_Augmented_000_00.hdf5 --replay_keys command_eef_pose_rel
+$ python ./bin/TeleopMujocoUR5eInsert.py --replay_log ../../../RoboManipAug/robo_manip_aug/augmented_data/sample/env2/MujocoUR5eInsert_base_demo_Augmented_000_00.hdf5 --replay_keys command_eef_pose_rel
 ```
 
 Train ACT policy:
 ```console
 $ cd robo_manip_baselines/act
-$ python ./bin/TrainAct.py --dataset_dir ../../../RoboManipAug/robo_manip_aug/augmented_data/sample/ --checkpoint_dir ./checkpoint/MujocoUR5eInsert_Act_RoboManipAug --state_keys --action_keys command_eef_pose_rel --camera_names hand
+$ python ./bin/TrainAct.py --dataset_dir ../../../RoboManipAug/robo_manip_aug/augmented_data/sample/ --checkpoint_dir ./checkpoint/Act_MujocoUR5eInsert_RoboManipAug --state_keys --action_keys command_eef_pose_rel --camera_names hand --train_ratio 0.9 --chunk_size 1
 ```
 
 Rollout ACT policy:
 ```console
 $ cd robo_manip_baselines/act
-$ python ./bin/rollout/RolloutActMujocoUR5eInsert.py --checkpoint ./checkpoint/MujocoUR5eInsert_Act_RoboManipAug/policy_last.ckpt --world_idx 2
+$ python ./bin/rollout/RolloutActMujocoUR5eInsert.py --checkpoint ./checkpoint/Act_MujocoUR5eInsert_RoboManipAug/policy_last.ckpt --world_idx 2
 ```
 
 Visualize environment point cloud with a 3D viewer:

@@ -172,7 +172,7 @@ class CollectAdditionalDataBase(TeleopBase):
             )
 
             # Sample end-effector position
-            num_points = 8
+            num_points = 12
             center_se3 = get_se3_from_pose(acceptable_region["center"]["eef_pose"])
             radius = acceptable_region["radius"]
             sample_pos_list = sample_points_on_sphere(
@@ -198,7 +198,7 @@ class CollectAdditionalDataBase(TeleopBase):
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.EEF,
                     eef_se3,
-                    duration=1.0,  # [s]
+                    duration=2.0,  # [s]
                 )
                 self.aug_end_time_idx = acceptable_region["convergence"]["time_idx"]
                 self.executing_augmented_motion = True
