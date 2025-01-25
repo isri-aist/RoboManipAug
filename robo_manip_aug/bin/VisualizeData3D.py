@@ -39,6 +39,7 @@ class VisualizeData3D(object):
             default=None,
             help="path of teleoperation data as base for data augmentation",
         )
+        parser.add_argument("--point_cloud_path", type=str, default=None)
         self.args = parser.parse_args()
 
     def setup_variables(self):
@@ -137,6 +138,13 @@ class VisualizeData3D(object):
                     radius=waypoint_radius, A2B=waypoint_mat, c=waypoint_color
                 )
                 self.fig.add_geometry(waypoint_sphere.geometries[0])
+
+        # Draw point cloud
+        if self.args.point_cloud_path is not None:
+            point_cloud = o3d.io.read_point_cloud(self.args.point_cloud_path)
+            self.fig.add_geometry(point_cloud)
+            opt = self.fig.visualizer.get_render_option()
+            opt.point_size = 10.0
 
         # Set camera pose
         view_ctrl = self.fig.visualizer.get_view_control()

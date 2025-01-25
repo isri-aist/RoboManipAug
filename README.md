@@ -47,7 +47,7 @@ $ python ./bin/CollectAdditionalDataMujocoUR5eInsert.py --base_demo_path ./teleo
 [optional] Visualize the trajectories of the collected data with a 3D viewer:
 ```console
 $ cd robo_manip_aug
-$ python ./bin/VisualizeData3D.py ./augmented_data/sample/ --base_demo_path ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5
+$ python ./bin/VisualizeData3D.py ./augmented_data/sample/ --base_demo_path ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 --point_cloud_path ./env_data/MujocoUR5eInsert.pcd
 ```
 
 [optional] Replay the augumented data:
