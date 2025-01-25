@@ -424,9 +424,7 @@ class AnnotateAcceptableRegion(object):
         )
         with open(filename, "wb") as f:
             pickle.dump(dump_dict, f)
-        print(
-            "[AnnotateAcceptableRegion] Save the annotation data to {}".format(filename)
-        )
+        print(f"[AnnotateAcceptableRegion] Save the annotation data to {filename}")
 
     def v_callback(self, vis):
         self.draw_prev_spheres_flag = not self.draw_prev_spheres_flag

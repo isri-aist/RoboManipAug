@@ -58,6 +58,18 @@ $ python ./bin/rollout/RolloutActMujocoUR5eInsert.py --checkpoint ./checkpoint/A
 ```
 
 ### Environment
+Generate environment point cloud from the hand camera RGBD images in the teleoperation data:
+```console
+$ cd robo_manip_aug
+$ python ./bin/GenerateMergedPointCloud.py ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 ./env_data/MujocoUR5eInsert.pcd
+```
+
+Visualize environment point cloud with a 3D viewer:
+```console
+$ cd robo_manip_aug
+$ python ./bin/VisualizePointCloud.py ./env_data/MujocoUR5eInsert.pcd
+```
+
 Extract images for learning 3D gaussian splatting from teleoperation data:
 ```console
 $ cd robo_manip_aug
