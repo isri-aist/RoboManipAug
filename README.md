@@ -66,7 +66,7 @@ $ python ./bin/TrainAct.py --dataset_dir ../../../RoboManipAug/robo_manip_aug/au
 Rollout ACT policy:
 ```console
 $ cd robo_manip_baselines/act
-$ python ./bin/rollout/RolloutActMujocoUR5eInsert.py --checkpoint ./checkpoint/Act_MujocoUR5eInsert_RoboManipAug/policy_last.ckpt --world_idx 2
+$ python ./bin/rollout/RolloutActMujocoUR5eInsert.py --checkpoint ./checkpoint/Act_MujocoUR5eInsert_RoboManipAug/policy_last.ckpt --world_idx 2 --world_random_scale 0.05 0.05 0.0
 ```
 
 ### Environment
