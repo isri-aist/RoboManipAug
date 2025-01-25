@@ -90,6 +90,7 @@ class AnnotateAcceptableRegion(object):
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
         parser.add_argument("teleop_data_path", type=str)
+        parser.add_argument("--point_cloud_path", type=str, default=None)
         parser.add_argument("--annotation_path", type=str, default=None)
         self.args = parser.parse_args()
 
@@ -171,17 +172,17 @@ class AnnotateAcceptableRegion(object):
             )
             self.fig.add_geometry(waypoint_sphere.geometries[0])
 
-        # Set camera pose
-        view_ctrl = self.fig.visualizer.get_view_control()
-        view_ctrl.set_lookat([0.0, 0.0, 1.4])
-        view_ctrl.set_front([1.2, 0.0, 1.8])
-        view_ctrl.set_up([0.0, 0.0, 1.0])
-        view_ctrl.set_zoom(0.6)
-
         # Draw acceptable sphere
         self.acceptable_width = 0.04  # [m]
         self.acceptable_sphere_lineset = None
         self.update_acceptable_sphere()
+
+        # Draw point cloud
+        if self.args.point_cloud_path is not None:
+            point_cloud = o3d.io.read_point_cloud(self.args.point_cloud_path)
+            self.fig.add_geometry(point_cloud)
+            opt = self.fig.visualizer.get_render_option()
+            opt.point_size = 10.0
 
         # Load annotation data
         if self.args.annotation_path is not None:
@@ -211,6 +212,13 @@ class AnnotateAcceptableRegion(object):
                 self.current_time_idx = self.next_time_idx
 
             self.update_acceptable_sphere()
+
+        # Set camera pose
+        view_ctrl = self.fig.visualizer.get_view_control()
+        view_ctrl.set_lookat([0.0, 0.0, 1.4])
+        view_ctrl.set_front([1.2, 0.0, 1.8])
+        view_ctrl.set_up([0.0, 0.0, 1.0])
+        view_ctrl.set_zoom(0.6)
 
     def run(self):
         while not self.quit_flag:
