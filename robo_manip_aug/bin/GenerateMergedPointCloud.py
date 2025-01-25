@@ -44,6 +44,12 @@ class GenerateMergedPointCloud(object):
         ]
         self.data_manager.load_data(self.args.teleop_data_path, load_keys)
 
+        # Check the calculation of the transformation from end-effector to camera from the MuJoCo model
+        self.trans_from_eef_to_camera = get_trans_from_rot_pos(
+            o3d.geometry.get_rotation_matrix_from_xyz([0.0, 0.0, np.pi]),
+            np.array([0.0, 0.05, 0.0]),
+        )
+
     def run(self):
         eef_pose_seq = self.data_manager.get_data_seq(DataKey.MEASURED_EEF_POSE)[
             :: self.args.skip
@@ -76,11 +82,9 @@ class GenerateMergedPointCloud(object):
             point_cloud.points = o3d.utility.Vector3dVector(xyz_array)
             point_cloud.colors = o3d.utility.Vector3dVector(rgb_array)
 
-            trans = get_trans_from_rot_pos(
-                *get_rot_pos_from_pose(eef_pose)
-            ) @ get_trans_from_rot_pos(
-                o3d.geometry.get_rotation_matrix_from_xyz([0.0, 0.0, np.pi]),
-                np.array([0.0, 0.1, -0.05]),
+            trans = (
+                get_trans_from_rot_pos(*get_rot_pos_from_pose(eef_pose))
+                @ self.trans_from_eef_to_camera
             )
             point_cloud.transform(trans)
 

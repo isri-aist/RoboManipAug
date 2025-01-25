@@ -65,6 +65,12 @@ class CollectAdditionalDataBase(TeleopBase):
             help="Path of annotation data describing the region of data augmentation",
             required=True,
         )
+        parser.add_argument(
+            "--num_sphere_sample",
+            type=int,
+            default=12,
+            help="Number of samples from each sphere of acceptable region",
+        )
 
         super().setup_args(parser)
 
@@ -136,13 +142,14 @@ class CollectAdditionalDataBase(TeleopBase):
 
         # Load base demo data
         print(
-            "[CollectAdditionalDataBase] Load teleoperation data: {}".format(
-                self.args.base_demo_path
-            )
+            f"[CollectAdditionalDataBase] Load teleoperation data: {self.args.base_demo_path}"
         )
         self.base_data_manager.load_data(self.args.base_demo_path)
 
         # Load annotation data
+        print(
+            f"[CollectAdditionalDataBase] Load annotation data: {self.args.annotation_path}"
+        )
         with open(self.args.annotation_path, "rb") as f:
             self.annotation_data = pickle.load(f)
 
@@ -174,11 +181,10 @@ class CollectAdditionalDataBase(TeleopBase):
             )
 
             # Sample end-effector position
-            num_points = 12
             center_se3 = get_se3_from_pose(acceptable_region["center"]["eef_pose"])
             radius = acceptable_region["radius"]
             sample_pos_list = sample_points_on_sphere(
-                center_se3.translation, radius, num_points
+                center_se3.translation, radius, self.args.num_sphere_sample
             )
 
             for self.sample_idx, sample_pos in enumerate(sample_pos_list):
