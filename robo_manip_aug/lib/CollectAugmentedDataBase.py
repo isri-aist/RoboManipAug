@@ -42,7 +42,7 @@ def sample_random_rotation(max_angle):
     return pin.AngleAxis(angle, axis).toRotationMatrix()
 
 
-class CollectAugumentedDataBase(TeleopBase):
+class CollectAugmentedDataBase(TeleopBase):
     def __init__(self):
         super().__init__()
 
@@ -113,7 +113,7 @@ class CollectAugumentedDataBase(TeleopBase):
         os.makedirs(os.path.dirname(symlink_filename), exist_ok=True)
         os.symlink(path.abspath(self.args.base_demo_path), symlink_filename)
         print(
-            f"[CollectAugumentedDataBase] Create a symbolic link to the base demo file: {symlink_filename}"
+            f"[CollectAugmentedDataBase] Create a symbolic link to the base demo file: {symlink_filename}"
         )
 
         self.reset_flag = True
@@ -180,13 +180,13 @@ class CollectAugumentedDataBase(TeleopBase):
 
         # Load base demo data
         print(
-            f"[CollectAugumentedDataBase] Load teleoperation data: {self.args.base_demo_path}"
+            f"[CollectAugmentedDataBase] Load teleoperation data: {self.args.base_demo_path}"
         )
         self.base_data_manager.load_data(self.args.base_demo_path)
 
         # Load annotation data
         print(
-            f"[CollectAugumentedDataBase] Load annotation data: {self.args.annotation_path}"
+            f"[CollectAugmentedDataBase] Load annotation data: {self.args.annotation_path}"
         )
         with open(self.args.annotation_path, "rb") as f:
             self.annotation_data = pickle.load(f)
@@ -198,13 +198,13 @@ class CollectAugumentedDataBase(TeleopBase):
         self.obs, info = self.env.reset()
 
         print(
-            "[CollectAugumentedDataBase] demo_name: {}, world_idx: {}".format(
+            "[CollectAugmentedDataBase] demo_name: {}, world_idx: {}".format(
                 self.demo_name,
                 self.data_manager.world_idx,
             )
         )
         print(
-            "[CollectAugumentedDataBase] Press the 'n' key to start automatic grasping."
+            "[CollectAugmentedDataBase] Press the 'n' key to start automatic grasping."
         )
 
     def collect_data(self):
@@ -214,7 +214,7 @@ class CollectAugumentedDataBase(TeleopBase):
             self.annotation_data["acceptable_region_list"]
         ):
             print(
-                "[CollectAugumentedDataBase] Collect data from acceptable region: "
+                "[CollectAugmentedDataBase] Collect data from acceptable region: "
                 f"{self.acceptable_region_idx+1} / {len(self.annotation_data['acceptable_region_list'])}"
             )
 
@@ -300,7 +300,7 @@ class CollectAugumentedDataBase(TeleopBase):
             reach_duration = 0.3  # [s]
             if self.phase_manager.get_phase_elapsed_duration() > reach_duration:
                 print(
-                    "[CollectAugumentedDataBase] Press the 'n' key to start data collection."
+                    "[CollectAugmentedDataBase] Press the 'n' key to start data collection."
                 )
                 self.phase_manager.set_next_phase()
         elif self.phase_manager.phase == Phase.GRASP:
@@ -309,15 +309,13 @@ class CollectAugumentedDataBase(TeleopBase):
                 self.thread = threading.Thread(target=self.collect_data)
                 self.thread.start()
                 self.thread.join(0.1)
-                print("[CollectAugumentedDataBase] Start a thread for data collection.")
+                print("[CollectAugmentedDataBase] Start a thread for data collection.")
                 self.phase_manager.set_next_phase()
         elif self.phase_manager.phase == Phase.TELEOP:
             self.teleop_time_idx += 1
             if not self.thread.is_alive():
-                print(
-                    "[CollectAugumentedDataBase] Finish a thread for data collection."
-                )
-                print("[CollectAugumentedDataBase] Press the 'n' key to quit.")
+                print("[CollectAugmentedDataBase] Finish a thread for data collection.")
+                print("[CollectAugmentedDataBase] Press the 'n' key to quit.")
                 self.phase_manager.set_next_phase()
         elif self.phase_manager.phase == Phase.END:
             if key == ord("n"):

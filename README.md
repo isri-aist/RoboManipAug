@@ -41,10 +41,10 @@ $ cd robo_manip_aug
 $ python ./bin/AnnotateAcceptableRegion.py ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 ./annotation_data/sample/MujocoUR5eInsert_annotation.pkl --point_cloud_path ./env_data/sample/MujocoUR5eInsert.pcd
 ```
 
-#### Collect augumented data within the acceptable regions in the simulation:
+#### Collect augmented data within the acceptable regions in the simulation:
 ```console
 $ cd robo_manip_aug
-$ python ./bin/CollectAugumentedDataMujocoUR5eInsert.py ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 ./annotation_data/sample/MujocoUR5eInsert_annotation.pkl
+$ python ./bin/CollectAugmentedDataMujocoUR5eInsert.py ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 ./annotation_data/sample/MujocoUR5eInsert_annotation.pkl
 ```
 
 The augmented data is stored in `./augmented_data/MujocoUR5eInsert_<data_suffix>`. Rename this directory to `./augmented_data/sample`.
@@ -55,7 +55,7 @@ $ cd robo_manip_aug
 $ python ./bin/VisualizeData3D.py ./augmented_data/sample/ --base_demo_path ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 --point_cloud_path ./env_data/sample/MujocoUR5eInsert.pcd
 ```
 
-#### [Optional] Replay the augumented data:
+#### [Optional] Replay the augmented data:
 ```console
 $ cd robo_manip_baselines/teleop
 $ python ./bin/TeleopMujocoUR5eInsert.py --replay_log ../../../RoboManipAug/robo_manip_aug/augmented_data/sample/region0/MujocoUR5eInsert_base_demo_Augmented_000_00.hdf5 --replay_keys command_eef_pose_rel
