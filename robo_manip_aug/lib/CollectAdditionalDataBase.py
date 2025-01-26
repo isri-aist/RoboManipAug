@@ -34,6 +34,13 @@ def sample_points_on_sphere(center, radius, num_points):
     return points
 
 
+def sample_random_rotation(max_angle):
+    axis = np.random.randn(3)
+    axis /= np.linalg.norm(axis)
+    angle = np.random.uniform(-1.0 * max_angle, max_angle)
+    return pin.AngleAxis(angle, axis).toRotationMatrix()
+
+
 class CollectAdditionalDataBase(TeleopBase):
     def __init__(self):
         super().__init__()
@@ -70,6 +77,12 @@ class CollectAdditionalDataBase(TeleopBase):
             type=int,
             default=12,
             help="Number of samples from each sphere of acceptable region",
+        )
+        parser.add_argument(
+            "--rotation_random_scale",
+            type=float,
+            default=2.0,
+            help="Scale of randomness to add to end-effector rotation",
         )
 
         super().setup_args(parser)
@@ -200,9 +213,10 @@ class CollectAdditionalDataBase(TeleopBase):
                 time.sleep(0.5)  # [s]
 
                 # Move to sampled point
-                eef_se3 = (
-                    pin.SE3(center_se3.rotation, sample_pos) * eef_offset_se3.inverse()
+                sample_rot = center_se3.rotation @ sample_random_rotation(
+                    self.args.rotation_random_scale * radius
                 )
+                eef_se3 = pin.SE3(sample_rot, sample_pos) * eef_offset_se3.inverse()
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.EEF,
                     eef_se3,
