@@ -73,6 +73,11 @@ class CollectAdditionalDataBase(TeleopBase):
             required=True,
         )
         parser.add_argument(
+            "--without_merge_base_demo",
+            action="store_true",
+            help="Do not merge the base motion after the augmented motion",
+        )
+        parser.add_argument(
             "--num_sphere_sample",
             type=int,
             default=12,
@@ -298,14 +303,17 @@ class CollectAdditionalDataBase(TeleopBase):
         self.data_manager.reverse_data()
 
         # Merge base demo motion
-        for key in self.data_manager.all_data_seq.keys():
-            self.data_manager.all_data_seq[key] += list(
-                self.base_data_manager.all_data_seq[key][self.aug_end_time_idx + 1 :]
+        if not self.args.without_merge_base_demo:
+            for key in self.data_manager.all_data_seq.keys():
+                self.data_manager.all_data_seq[key] += list(
+                    self.base_data_manager.all_data_seq[key][
+                        self.aug_end_time_idx + 1 :
+                    ]
+                )
+            self.data_manager.all_data_seq[DataKey.TIME] = list(
+                self.env.unwrapped.dt
+                * np.arange(len(self.data_manager.all_data_seq[DataKey.TIME]))
             )
-        self.data_manager.all_data_seq[DataKey.TIME] = list(
-            self.env.unwrapped.dt
-            * np.arange(len(self.data_manager.all_data_seq[DataKey.TIME]))
-        )
 
         # Dump to file
         filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/env{:0>1}/{}_Augmented_{:0>3}_{:0>2}.hdf5".format(
