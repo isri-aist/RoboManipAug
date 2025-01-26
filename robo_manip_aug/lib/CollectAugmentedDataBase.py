@@ -79,7 +79,7 @@ class CollectAugmentedDataBase(TeleopBase):
         parser.add_argument(
             "--num_sphere_sample",
             type=int,
-            default=12,
+            default=16,
             help="Number of samples from each sphere of acceptable region",
         )
         parser.add_argument(

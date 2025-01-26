@@ -101,6 +101,10 @@ class GenerateMergedPointCloud(object):
         os.makedirs(os.path.dirname(self.args.point_cloud_path), exist_ok=True)
         o3d.io.write_point_cloud(self.args.point_cloud_path, downsampled_point_cloud)
 
+        print(
+            "[GenerateMergedPointCloud] Visualize merged point cloud. Press the esc key to exit."
+        )
+
         vis = o3d.visualization.Visualizer()
         vis.create_window()
         vis.add_geometry(downsampled_point_cloud)

@@ -1,4 +1,5 @@
 import argparse
+import os
 import pickle
 import time
 from os import path
@@ -186,7 +187,7 @@ class AnnotateAcceptableRegion(object):
             opt.point_size = 10.0
 
         # Load annotation data
-        if self.args.load_annotation is not None:
+        if self.args.load_annotation:
             with open(self.args.annotation_path, "rb") as f:
                 annotation_data = pickle.load(f)
 

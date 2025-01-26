@@ -58,7 +58,7 @@ $ python ./bin/VisualizeData3D.py ./augmented_data/sample/ --base_demo_path ./te
 #### [Optional] Replay the augmented data:
 ```console
 $ cd robo_manip_baselines/teleop
-$ python ./bin/TeleopMujocoUR5eInsert.py --replay_log ../../../RoboManipAug/robo_manip_aug/augmented_data/sample/region0/MujocoUR5eInsert_base_demo_Augmented_000_00.hdf5 --replay_keys command_eef_pose_rel
+$ python ./bin/TeleopMujocoUR5eInsert.py --replay_log ../../../RoboManipAug/robo_manip_aug/augmented_data/sample/region000/MujocoUR5eInsert_augmented_region000_00.hdf5 --replay_keys command_eef_pose_rel
 ```
 
 ### Policy
