@@ -42,7 +42,7 @@ def sample_random_rotation(max_angle):
     return pin.AngleAxis(angle, axis).toRotationMatrix()
 
 
-class CollectAdditionalDataBase(TeleopBase):
+class CollectAugumentedDataBase(TeleopBase):
     def __init__(self):
         super().__init__()
 
@@ -62,16 +62,14 @@ class CollectAdditionalDataBase(TeleopBase):
             )
 
         parser.add_argument(
-            "--base_demo_path",
+            "base_demo_path",
             type=str,
             help="path of teleoperation data as base for data augmentation",
-            required=True,
         )
         parser.add_argument(
-            "--annotation_path",
+            "annotation_path",
             type=str,
             help="Path of annotation data describing the region of data augmentation",
-            required=True,
         )
         parser.add_argument(
             "--without_merge_base_demo",
@@ -104,7 +102,7 @@ class CollectAdditionalDataBase(TeleopBase):
         os.makedirs(os.path.dirname(symlink_filename), exist_ok=True)
         os.symlink(path.abspath(self.args.base_demo_path), symlink_filename)
         print(
-            f"[CollectAdditionalDataBase] Create a symbolic link to the base demo file: {symlink_filename}"
+            f"[CollectAugumentedDataBase] Create a symbolic link to the base demo file: {symlink_filename}"
         )
 
         self.reset_flag = True
@@ -171,13 +169,13 @@ class CollectAdditionalDataBase(TeleopBase):
 
         # Load base demo data
         print(
-            f"[CollectAdditionalDataBase] Load teleoperation data: {self.args.base_demo_path}"
+            f"[CollectAugumentedDataBase] Load teleoperation data: {self.args.base_demo_path}"
         )
         self.base_data_manager.load_data(self.args.base_demo_path)
 
         # Load annotation data
         print(
-            f"[CollectAdditionalDataBase] Load annotation data: {self.args.annotation_path}"
+            f"[CollectAugumentedDataBase] Load annotation data: {self.args.annotation_path}"
         )
         with open(self.args.annotation_path, "rb") as f:
             self.annotation_data = pickle.load(f)
@@ -189,13 +187,13 @@ class CollectAdditionalDataBase(TeleopBase):
         self.obs, info = self.env.reset()
 
         print(
-            "[CollectAdditionalDataBase] demo_name: {}, world_idx: {}".format(
+            "[CollectAugumentedDataBase] demo_name: {}, world_idx: {}".format(
                 self.demo_name,
                 self.data_manager.world_idx,
             )
         )
         print(
-            "[CollectAdditionalDataBase] Press the 'n' key to start automatic grasping."
+            "[CollectAugumentedDataBase] Press the 'n' key to start automatic grasping."
         )
 
     def collect_data(self):
@@ -205,7 +203,7 @@ class CollectAdditionalDataBase(TeleopBase):
             self.annotation_data["acceptable_region_list"]
         ):
             print(
-                "[CollectAdditionalDataBase] Collect data from acceptable region: "
+                "[CollectAugumentedDataBase] Collect data from acceptable region: "
                 f"{self.acceptable_region_idx+1} / {len(self.annotation_data['acceptable_region_list'])}"
             )
 
@@ -284,7 +282,7 @@ class CollectAdditionalDataBase(TeleopBase):
             reach_duration = 0.3  # [s]
             if self.phase_manager.get_phase_elapsed_duration() > reach_duration:
                 print(
-                    "[CollectAdditionalDataBase] Press the 'n' key to start data collection."
+                    "[CollectAugumentedDataBase] Press the 'n' key to start data collection."
                 )
                 self.phase_manager.set_next_phase()
         elif self.phase_manager.phase == Phase.GRASP:
@@ -293,15 +291,15 @@ class CollectAdditionalDataBase(TeleopBase):
                 self.thread = threading.Thread(target=self.collect_data)
                 self.thread.start()
                 self.thread.join(0.1)
-                print("[CollectAdditionalDataBase] Start a thread for data collection.")
+                print("[CollectAugumentedDataBase] Start a thread for data collection.")
                 self.phase_manager.set_next_phase()
         elif self.phase_manager.phase == Phase.TELEOP:
             self.teleop_time_idx += 1
             if not self.thread.is_alive():
                 print(
-                    "[CollectAdditionalDataBase] Finish a thread for data collection."
+                    "[CollectAugumentedDataBase] Finish a thread for data collection."
                 )
-                print("[CollectAdditionalDataBase] Press the 'n' key to quit.")
+                print("[CollectAugumentedDataBase] Press the 'n' key to quit.")
                 self.phase_manager.set_next_phase()
         elif self.phase_manager.phase == Phase.END:
             if key == ord("n"):
@@ -327,13 +325,11 @@ class CollectAdditionalDataBase(TeleopBase):
             )
 
         # Dump to file
-        filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/region{:0>1}/{}_Augmented_{:0>3}_{:0>2}.hdf5".format(
+        filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/region{:0>3}/{}_augmented_region{:0>3}_{:0>2}.hdf5".format(
             self.demo_name,
             self.datetime_now,
             self.acceptable_region_idx,
-            path.splitext(path.basename(self.args.annotation_path))[0].removesuffix(
-                "_Annotation"
-            ),
+            self.demo_name,
             self.acceptable_region_idx,
             self.sample_idx,
         )

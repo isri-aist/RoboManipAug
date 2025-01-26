@@ -14,69 +14,82 @@ $ pip install -e .
 
 ## Examples
 ### Data
-Collect single data by teleoperation:
+#### Collect single data by teleoperation:
 ```console
 $ cd robo_manip_baselines/teleop
 $ python bin/TeleopMujocoUR5eInsert.py --world_idx_list 2
 ```
 
-Generate environment point cloud from the hand camera RGBD images in the teleoperation data:
+Move the saved HDF5 file to `robo_manip_aug/teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5`.  
+(The `sample` directory in the following can be an arbitrary name.)
+
+#### Generate environment point cloud from the hand camera RGBD images in the teleoperation data:
 ```console
 $ cd robo_manip_aug
-$ python ./bin/GenerateMergedPointCloud.py ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 ./env_data/MujocoUR5eInsert.pcd
+$ python ./bin/GenerateMergedPointCloud.py ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 ./env_data/sample/MujocoUR5eInsert.pcd
 ```
 
-[optional] Visualize environment point cloud with a 3D viewer:
+#### [Optional] Visualize environment point cloud with a 3D viewer:
 ```console
 $ cd robo_manip_aug
-$ python ./bin/VisualizePointCloud.py ./env_data/MujocoUR5eInsert.pcd
+$ python ./bin/VisualizePointCloud.py ./env_data/sample/MujocoUR5eInsert.pcd
 ```
 
-Annotate acceptable regions of end-effectors in data augmentation:
+#### Annotate acceptable regions of end-effectors in data augmentation:
 ```console
 $ cd robo_manip_aug
-$ python ./bin/AnnotateAcceptableRegion.py ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 --point_cloud_path ./env_data/MujocoUR5eInsert.pcd
+$ python ./bin/AnnotateAcceptableRegion.py ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 ./annotation_data/sample/MujocoUR5eInsert_annotation.pkl --point_cloud_path ./env_data/sample/MujocoUR5eInsert.pcd
 ```
 
-Collect additional data within the acceptable regions in the simulation:
+#### Collect augumented data within the acceptable regions in the simulation:
 ```console
 $ cd robo_manip_aug
-$ python ./bin/CollectAdditionalDataMujocoUR5eInsert.py --base_demo_path ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 --annotation_path ./annotation_data/sample/MujocoUR5eInsert_base_demo_Annotation.pkl
+$ python ./bin/CollectAugumentedDataMujocoUR5eInsert.py ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 ./annotation_data/sample/MujocoUR5eInsert_annotation.pkl
 ```
 
-[optional] Visualize the trajectories of the collected data with a 3D viewer:
+The augmented data is stored in `./augmented_data/MujocoUR5eInsert_<data_suffix>`. Rename this directory to `./augmented_data/sample`.
+
+#### [Optional] Visualize the trajectories of the collected data with a 3D viewer:
 ```console
 $ cd robo_manip_aug
-$ python ./bin/VisualizeData3D.py ./augmented_data/sample/ --base_demo_path ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 --point_cloud_path ./env_data/MujocoUR5eInsert.pcd
+$ python ./bin/VisualizeData3D.py ./augmented_data/sample/ --base_demo_path ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 --point_cloud_path ./env_data/sample/MujocoUR5eInsert.pcd
 ```
 
-[optional] Replay the augumented data:
+#### [Optional] Replay the augumented data:
 ```console
 $ cd robo_manip_baselines/teleop
-$ python ./bin/TeleopMujocoUR5eInsert.py --replay_log ../../../RoboManipAug/robo_manip_aug/augmented_data/sample/env2/MujocoUR5eInsert_base_demo_Augmented_000_00.hdf5 --replay_keys command_eef_pose_rel
+$ python ./bin/TeleopMujocoUR5eInsert.py --replay_log ../../../RoboManipAug/robo_manip_aug/augmented_data/sample/region0/MujocoUR5eInsert_base_demo_Augmented_000_00.hdf5 --replay_keys command_eef_pose_rel
 ```
 
 ### Policy
-Train ACT policy:
+#### Compose learning data:
 ```console
-$ cd robo_manip_baselines/act
-$ python ./bin/TrainAct.py --dataset_dir ../../../RoboManipAug/robo_manip_aug/augmented_data/sample/ --checkpoint_dir ./checkpoint/Act_MujocoUR5eInsert_RoboManipAug --state_keys --action_keys command_eef_pose_rel --camera_names hand --train_ratio 0.9 --chunk_size 1
+$ cd robo_manip_aug
+$ python ./bin/ComposeDataset.py ./augmented_data/sample ./learning_data/sample
 ```
 
-Rollout ACT policy:
+By adding the `--num_data_per_region <N>` option, you can specify the number of data per region to be N (by default, all data is used).
+
+#### Train ACT policy:
 ```console
 $ cd robo_manip_baselines/act
-$ python ./bin/rollout/RolloutActMujocoUR5eInsert.py --checkpoint ./checkpoint/Act_MujocoUR5eInsert_RoboManipAug/policy_last.ckpt --world_idx 2 --world_random_scale 0.05 0.05 0.0
+$ python ./bin/TrainAct.py --dataset_dir ../../../RoboManipAug/robo_manip_aug/learning_data/sample/ --checkpoint_dir ./checkpoint/sample --state_keys --action_keys command_eef_pose_rel --camera_names hand --train_ratio 1.0 --val_ratio 0.2 --chunk_size 1
 ```
 
-### Environment
-Extract images for learning 3D gaussian splatting from teleoperation data:
+#### Rollout ACT policy:
+```console
+$ cd robo_manip_baselines/act
+$ python ./bin/rollout/RolloutActMujocoUR5eInsert.py --checkpoint ./checkpoint/sample/policy_last.ckpt --world_idx 2 --world_random_scale 0.05 0.05 0.0
+```
+
+### [Deprecated] Environment
+#### Extract images for learning 3D gaussian splatting from teleoperation data:
 ```console
 $ cd robo_manip_aug
 $ python ./bin/ExtractImagesFromData.py <path_to_hdf5> --out_dir ./env_data/MujocoUR5eInsert
 ```
 
-Visualize environment point cloud with a 3D viewer:
+#### Visualize environment point cloud with a 3D viewer:
 ```console
 $ cd robo_manip_aug
 $ python ./bin/VisualizePointCloud.py ./env_data/MujocoUR5eInsert_SuGaR.ply

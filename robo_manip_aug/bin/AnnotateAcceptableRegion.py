@@ -90,8 +90,9 @@ class AnnotateAcceptableRegion(object):
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
         parser.add_argument("teleop_data_path", type=str)
+        parser.add_argument("annotation_path", type=str)
         parser.add_argument("--point_cloud_path", type=str, default=None)
-        parser.add_argument("--annotation_path", type=str, default=None)
+        parser.add_argument("--load_annotation", action="store_true")
         self.args = parser.parse_args()
 
     def setup_variables(self):
@@ -185,7 +186,7 @@ class AnnotateAcceptableRegion(object):
             opt.point_size = 10.0
 
         # Load annotation data
-        if self.args.annotation_path is not None:
+        if self.args.load_annotation is not None:
             with open(self.args.annotation_path, "rb") as f:
                 annotation_data = pickle.load(f)
 
@@ -418,6 +419,12 @@ class AnnotateAcceptableRegion(object):
         self.update_acceptable_scale(delta, action, mods)
 
     def s_callback(self, vis):
+        if self.args.load_annotation:
+            print(
+                "[AnnotateAcceptableRegion] Annotation is not saved in the loading mode."
+            )
+            return
+
         dump_dict = {}
         dump_dict["eef_offset_pose"] = get_pose_from_rot_pos(
             self.eef_offset_mat[0:3, 0:3], self.eef_offset_mat[0:3, 3]
@@ -427,12 +434,12 @@ class AnnotateAcceptableRegion(object):
             if acceptable_region.skip:
                 continue
             dump_dict["acceptable_region_list"].append(acceptable_region.to_dict(self))
-        filename = "annotation_data/{}_Annotation.pkl".format(
-            path.splitext(path.basename(self.args.teleop_data_path))[0]
-        )
-        with open(filename, "wb") as f:
+        os.makedirs(os.path.dirname(self.args.annotation_path), exist_ok=True)
+        with open(self.args.annotation_path, "wb") as f:
             pickle.dump(dump_dict, f)
-        print(f"[AnnotateAcceptableRegion] Save the annotation data to {filename}")
+        print(
+            f"[AnnotateAcceptableRegion] Save the annotation data to {self.args.annotation_path}"
+        )
 
     def v_callback(self, vis):
         self.draw_prev_spheres_flag = not self.draw_prev_spheres_flag

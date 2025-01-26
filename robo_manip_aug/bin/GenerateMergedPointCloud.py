@@ -1,4 +1,5 @@
 import argparse
+import os
 from os import path
 
 import numpy as np
@@ -97,6 +98,7 @@ class GenerateMergedPointCloud(object):
         print(
             f"[GenerateMergedPointCloud] Save merged point cloud to {self.args.point_cloud_path}"
         )
+        os.makedirs(os.path.dirname(self.args.point_cloud_path), exist_ok=True)
         o3d.io.write_point_cloud(self.args.point_cloud_path, downsampled_point_cloud)
 
         vis = o3d.visualization.Visualizer()

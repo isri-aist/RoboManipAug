@@ -3,10 +3,10 @@ import numpy as np
 import pinocchio as pin
 from robo_manip_baselines.common import DataKey, Phase
 
-from robo_manip_aug import CollectAdditionalDataBase
+from robo_manip_aug import CollectAugumentedDataBase
 
 
-class CollectAdditionalDataMujocoUR5eInsert(CollectAdditionalDataBase):
+class CollectAugumentedDataMujocoUR5eInsert(CollectAugumentedDataBase):
     def setup_env(self):
         self.env = gym.make(
             "robo_manip_baselines/MujocoUR5eInsertEnv-v0", render_mode="human"
@@ -23,5 +23,5 @@ class CollectAdditionalDataMujocoUR5eInsert(CollectAdditionalDataBase):
 
 
 if __name__ == "__main__":
-    collect = CollectAdditionalDataMujocoUR5eInsert()
+    collect = CollectAugumentedDataMujocoUR5eInsert()
     collect.run()

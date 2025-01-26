@@ -14,7 +14,7 @@ class ComposeDataset(object):
         )
         parser.add_argument("augmented_data_dir", type=str)
         parser.add_argument("learning_data_dir", type=str)
-        parser.add_argument("--num_samples_per_region", type=int, default=None)
+        parser.add_argument("--num_data_per_region", type=int, default=None)
         self.args = parser.parse_args()
 
     def run(self):
@@ -43,8 +43,8 @@ class ComposeDataset(object):
             os.makedirs(dest_subdir_path, exist_ok=True)
 
             filename_list = sorted(os.listdir(src_subdir_path))
-            if self.args.num_samples_per_region is not None:
-                filename_list = filename_list[: self.args.num_samples_per_region]
+            if self.args.num_data_per_region is not None:
+                filename_list = filename_list[: self.args.num_data_per_region]
 
             print(
                 f"[ComposeDataset] Create {len(filename_list)} symbolic links in {dest_subdir_path}"
