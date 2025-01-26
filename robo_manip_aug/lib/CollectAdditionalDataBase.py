@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import os
 import pickle
 import threading
 import time
@@ -96,6 +97,16 @@ class CollectAdditionalDataBase(TeleopBase):
             raise ValueError("replay_log must not be specified.")
 
     def run(self):
+        # Create a symbolic link to the base demo file
+        symlink_filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/base_demo.hdf5".format(
+            self.demo_name, self.datetime_now
+        )
+        os.makedirs(os.path.dirname(symlink_filename), exist_ok=True)
+        os.symlink(path.abspath(self.args.base_demo_path), symlink_filename)
+        print(
+            f"[CollectAdditionalDataBase] Create a symbolic link to the base demo file: {symlink_filename}"
+        )
+
         self.reset_flag = True
         self.quit_flag = False
         self.save_flag = False
@@ -316,10 +327,10 @@ class CollectAdditionalDataBase(TeleopBase):
             )
 
         # Dump to file
-        filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/env{:0>1}/{}_Augmented_{:0>3}_{:0>2}.hdf5".format(
+        filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/region{:0>1}/{}_Augmented_{:0>3}_{:0>2}.hdf5".format(
             self.demo_name,
             self.datetime_now,
-            self.data_manager.world_idx,
+            self.acceptable_region_idx,
             path.splitext(path.basename(self.args.annotation_path))[0].removesuffix(
                 "_Annotation"
             ),
