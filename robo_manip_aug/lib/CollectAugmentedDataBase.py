@@ -88,6 +88,17 @@ class CollectAugumentedDataBase(TeleopBase):
             default=2.0,
             help="Scale of randomness to add to end-effector rotation",
         )
+        parser.add_argument(
+            "--overwrite_radius",
+            type=float,
+            default=None,
+            help="Overwrite radius of acceptable region with a fixed value",
+        )
+        parser.add_argument(
+            "--return_to_center",
+            action="store_true",
+            help="Return to the center of the acceptable region",
+        )
 
         super().setup_args(parser)
 
@@ -209,14 +220,21 @@ class CollectAugumentedDataBase(TeleopBase):
 
             # Sample end-effector position
             center_se3 = get_se3_from_pose(acceptable_region["center"]["eef_pose"])
-            radius = acceptable_region["radius"]
+            if self.args.overwrite_radius is None:
+                radius = acceptable_region["radius"]
+            else:
+                radius = self.args.overwrite_radius
             sample_pos_list = sample_points_on_sphere(
                 center_se3.translation, radius, self.args.num_sphere_sample
             )
 
             for self.sample_idx, sample_pos in enumerate(sample_pos_list):
                 # Move to convergence point
-                joint_pos = acceptable_region["convergence"]["joint_pos"]
+                if self.args.return_to_center:
+                    convergence_key = "center"
+                else:
+                    convergence_key = "convergence"
+                joint_pos = acceptable_region[convergence_key]["joint_pos"]
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.JOINT,
                     joint_pos,
@@ -236,7 +254,7 @@ class CollectAugumentedDataBase(TeleopBase):
                     eef_se3,
                     duration=2.0,  # [s]
                 )
-                self.aug_end_time_idx = acceptable_region["convergence"]["time_idx"]
+                self.aug_end_time_idx = acceptable_region[convergence_key]["time_idx"]
                 self.executing_augmented_motion = True
                 self.motion_interpolator.wait()
                 self.executing_augmented_motion = False
