@@ -141,7 +141,7 @@ class CollectAugmentedDataBase(TeleopBase):
                 self.phase_manager.phase == Phase.TELEOP
                 and self.executing_augmented_motion
             ):
-                self.record_data(self.obs, action, info)  # noqa: F821
+                self.record_data(self.obs, info)  # noqa: F821
 
             # Step environment
             self.obs, _, _, _, info = self.env.step(action)
