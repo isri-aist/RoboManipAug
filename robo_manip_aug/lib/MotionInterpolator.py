@@ -53,20 +53,29 @@ class MotionInterpolator(object):
         self.start_time = self.env.unwrapped.get_time()
 
         if self.duration is None:
+            min_duration = 0.1  # [s]
             if self.target_space == self.TargetSpace.JOINT:
                 self.duration = np.max(
-                    np.divide(np.abs(self.target_state - self.start_state), vel_limit)
+                    [
+                        np.divide(
+                            np.abs(self.target_state - self.start_state), vel_limit
+                        ).max(),
+                        min_duration,
+                    ]
                 )
             elif self.target_space == self.TargetSpace.EEF:
                 self.duration = np.max(
-                    np.divide(
-                        np.abs(pin.log(self.target_state.actInv(self.start_state))),
-                        vel_limit,
-                    )
+                    [
+                        np.divide(
+                            np.abs(pin.log(self.target_state.actInv(self.start_state))),
+                            vel_limit,
+                        ).max(),
+                        min_duration,
+                    ]
                 )
 
     def update(self):
-        if self.target_state is None:
+        if self.target_state is None or self.duration is None:
             return
 
         current_time = self.env.unwrapped.get_time()
