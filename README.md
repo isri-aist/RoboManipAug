@@ -70,16 +70,16 @@ $ python ./bin/ComposeDataset.py ./augmented_data/sample ./learning_data/sample
 
 By adding the `--num_data_per_region <N>` option, you can specify the number of data per region to be N (by default, all data is used).
 
-#### Train ACT policy:
+#### Train policy:
 ```console
-$ cd robo_manip_baselines/act
-$ python ./bin/TrainAct.py --dataset_dir ../../../RoboManipAug/robo_manip_aug/learning_data/sample/ --checkpoint_dir ./checkpoint/sample --state_keys --action_keys command_eef_pose_rel --camera_names hand --train_ratio 1.0 --val_ratio 0.2 --chunk_size 1
+$ cd robo_manip_baselines/mlp
+$ python ./bin/TrainMlp.py --dataset_dir ../../../RoboManipAug/robo_manip_aug/learning_data/sample/ --checkpoint_dir ./checkpoint/sample --state_keys --action_keys command_eef_pose_rel --camera_names hand --train_ratio 1.0 --val_ratio 0.2
 ```
 
-#### Rollout ACT policy:
+#### Rollout policy:
 ```console
-$ cd robo_manip_baselines/act
-$ python ./bin/rollout/RolloutActMujocoUR5eInsert.py --checkpoint ./checkpoint/sample/policy_last.ckpt --world_idx 2 --world_random_scale 0.05 0.05 0.0
+$ cd robo_manip_baselines/mlp
+$ python ./bin/rollout/RolloutMlpMujocoUR5eInsert.py --checkpoint ./checkpoint/sample/policy_last.ckpt --world_idx 2 --world_random_scale 0.05 0.05 0.0
 ```
 
 ### [Deprecated] Environment
