@@ -1,6 +1,5 @@
 import argparse
 import os
-from os import path
 
 import numpy as np
 import open3d as o3d
@@ -8,7 +7,6 @@ from robo_manip_baselines.common import (
     DataKey,
     DataManager,
     convert_depth_image_to_point_cloud,
-    get_pose_from_rot_pos,
     get_rot_pos_from_pose,
 )
 from tqdm import tqdm

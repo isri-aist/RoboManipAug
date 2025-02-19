@@ -13,6 +13,6 @@ repos:
     rev: v0.8.0
     hooks:
       - id: ruff
-        args: [--fix, --select, I]
+        args: [--fix, --extend-select, I]
         exclude: "(__init__\\.py)"
       - id: ruff-format

@@ -1,5 +1,4 @@
 import argparse
-import glob
 import os
 from os import path
 
