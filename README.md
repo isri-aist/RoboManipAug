@@ -47,25 +47,25 @@ $ cd robo_manip_aug
 $ python ./bin/CollectAugmentedDataMujocoUR5eInsert.py ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 ./annotation_data/sample/MujocoUR5eInsert_annotation.pkl
 ```
 
-The augmented data is stored in `./augmented_data/MujocoUR5eInsert_<data_suffix>`. Rename this directory to `./augmented_data/sample`.
+The augmented data is stored in `./augmented_data/MujocoUR5eInsert_<data_suffix>`. Rename this directory to `./augmented_data/sample/MujocoUR5eInsert`.
 
 #### [Optional] Visualize the trajectories of the collected data with a 3D viewer:
 ```console
 $ cd robo_manip_aug
-$ python ./bin/VisualizeData3D.py ./augmented_data/sample/ --base_demo_path ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 --point_cloud_path ./env_data/sample/MujocoUR5eInsert.pcd
+$ python ./bin/VisualizeData3D.py ./augmented_data/sample/MujocoUR5eInsert/ --base_demo_path ./teleop_data/sample/MujocoUR5eInsert_base_demo.hdf5 --point_cloud_path ./env_data/sample/MujocoUR5eInsert.pcd
 ```
 
 #### [Optional] Replay the augmented data:
 ```console
 $ cd robo_manip_baselines/teleop
-$ python ./bin/TeleopMujocoUR5eInsert.py --replay_log ../../../RoboManipAug/robo_manip_aug/augmented_data/sample/region000/MujocoUR5eInsert_augmented_region000_00.hdf5 --replay_keys command_eef_pose_rel
+$ python ./bin/TeleopMujocoUR5eInsert.py --replay_log ../../../RoboManipAug/robo_manip_aug/augmented_data/sample/MujocoUR5eInsert/region000/MujocoUR5eInsert_augmented_region000_00.hdf5 --replay_keys command_eef_pose_rel
 ```
 
 ### Policy
 #### Compose learning data:
 ```console
 $ cd robo_manip_aug
-$ python ./bin/ComposeDataset.py ./augmented_data/sample ./learning_data/sample
+$ python ./bin/ComposeDataset.py ./augmented_data/sample/MujocoUR5eInsert ./learning_data/sample/MujocoUR5eInsert
 ```
 
 By adding the `--num_data_per_region <N>` option, you can specify the number of data per region to be N (by default, all data is used).
@@ -73,13 +73,13 @@ By adding the `--num_data_per_region <N>` option, you can specify the number of 
 #### Train policy:
 ```console
 $ cd robo_manip_baselines/mlp
-$ python ./bin/TrainMlp.py --dataset_dir ../../../RoboManipAug/robo_manip_aug/learning_data/sample/ --checkpoint_dir ./checkpoint/sample --state_keys --action_keys command_eef_pose_rel --camera_names hand --train_ratio 1.0 --val_ratio 0.2
+$ python ./bin/TrainMlp.py --dataset_dir ../../../RoboManipAug/robo_manip_aug/learning_data/sample/MujocoUR5eInsert/ --checkpoint_dir ./checkpoint/sample/MujocoUR5eInsert/ --state_keys --action_keys command_eef_pose_rel --camera_names hand --train_ratio 1.0 --val_ratio 0.2
 ```
 
 #### Rollout policy:
 ```console
 $ cd robo_manip_baselines/mlp
-$ python ./bin/rollout/RolloutMlpMujocoUR5eInsert.py --checkpoint ./checkpoint/sample/policy_last.ckpt --world_idx 2 --world_random_scale 0.05 0.05 0.0
+$ python ./bin/rollout/RolloutMlpMujocoUR5eInsert.py --checkpoint ./checkpoint/sample/MujocoUR5eInsert/policy_last.ckpt --world_idx 2 --world_random_scale 0.05 0.05 0.0
 ```
 
 ### [Deprecated] Environment
