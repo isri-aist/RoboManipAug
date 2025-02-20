@@ -119,6 +119,7 @@ class CollectAugmentedDataBase(TeleopBase):
         self.quit_flag = False
         self.save_flag = False
         self.executing_augmented_motion = False
+        self.follow_demo_info = None
         iteration_duration_list = []
 
         while True:
@@ -208,16 +209,52 @@ class CollectAugmentedDataBase(TeleopBase):
 
     def collect_data(self):
         eef_offset_se3 = get_se3_from_pose(self.annotation_data["eef_offset_pose"])
+        if self.args.return_to_center:
+            convergence_key = "center"
+        else:
+            convergence_key = "convergence"
 
         for self.acceptable_region_idx, acceptable_region in enumerate(
-            self.annotation_data["acceptable_region_list"]
+            list(self.annotation_data["acceptable_region_list"]) + [None]
         ):
+            # Move along base demo motion
+            print("[CollectAugmentedDataBase] Move along the base demo motion.")
+            self.follow_demo_info = {}
+            if self.acceptable_region_idx == 0:
+                self.follow_demo_info["start_time_idx"] = 0
+            else:
+                prev_acceptable_region = self.annotation_data["acceptable_region_list"][
+                    self.acceptable_region_idx - 1
+                ]
+                self.follow_demo_info["start_time_idx"] = prev_acceptable_region[
+                    convergence_key
+                ]["time_idx"]
+            if self.acceptable_region_idx == len(
+                self.annotation_data["acceptable_region_list"]
+            ):
+                self.follow_demo_info["end_time_idx"] = (
+                    len(self.base_data_manager.get_data_seq(DataKey.TIME)) - 1
+                )
+            else:
+                self.follow_demo_info["end_time_idx"] = acceptable_region[
+                    convergence_key
+                ]["time_idx"]
+            self.follow_demo_info["current_time_idx"] = self.follow_demo_info[
+                "start_time_idx"
+            ]
+            while self.follow_demo_info is not None:
+                time.sleep(0.01)
+
+            if self.acceptable_region_idx == len(
+                self.annotation_data["acceptable_region_list"]
+            ):
+                break
+
+            # Sample end-effector position
             print(
                 "[CollectAugmentedDataBase] Collect data from acceptable region: "
                 f"{self.acceptable_region_idx+1} / {len(self.annotation_data['acceptable_region_list'])}"
             )
-
-            # Sample end-effector position
             center_se3 = get_se3_from_pose(acceptable_region["center"]["eef_pose"])
             if self.args.overwrite_radius is None:
                 radius = acceptable_region["radius"]
@@ -227,21 +264,24 @@ class CollectAugmentedDataBase(TeleopBase):
                 center_se3.translation, radius, self.args.num_sphere_sample
             )
 
-            for self.sample_idx, sample_pos in enumerate(sample_pos_list):
+            for self.sample_idx, sample_pos in enumerate(
+                list(sample_pos_list) + [None]
+            ):
                 # Move to convergence point
-                if self.args.return_to_center:
-                    convergence_key = "center"
-                else:
-                    convergence_key = "convergence"
                 joint_pos = acceptable_region[convergence_key]["joint_pos"]
+                vel_limit = np.full_like(joint_pos, np.deg2rad(20.0))  # [rad/s]
+                vel_limit[self.env.unwrapped.gripper_joint_idxes] = 100.0
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.JOINT,
                     joint_pos,
-                    vel_limit=np.deg2rad(20.0),  # [rad/s]
+                    vel_limit=vel_limit,
                 )
                 self.motion_interpolator.wait()
                 self.wait_until_motion_stop()
                 time.sleep(0.5)  # [s]
+
+                if self.sample_idx == len(sample_pos_list):
+                    break
 
                 # Move to sampled point
                 sample_rot = center_se3.rotation @ sample_random_rotation(
@@ -277,7 +317,23 @@ class CollectAugmentedDataBase(TeleopBase):
 
     def set_arm_command(self):
         if self.phase_manager.phase == Phase.TELEOP:
-            self.motion_interpolator.update()
+            if self.follow_demo_info is None:
+                self.motion_interpolator.update()
+            else:
+                self.motion_manager.set_command_data(
+                    DataKey.COMMAND_JOINT_POS,
+                    self.base_data_manager.get_single_data(
+                        DataKey.COMMAND_JOINT_POS,
+                        self.follow_demo_info["current_time_idx"],
+                    ),
+                )
+                if (
+                    self.follow_demo_info["current_time_idx"]
+                    == self.follow_demo_info["end_time_idx"]
+                ):
+                    self.follow_demo_info = None
+                else:
+                    self.follow_demo_info["current_time_idx"] += 1
 
     def set_gripper_command(self):
         if self.phase_manager.phase == Phase.GRASP:
