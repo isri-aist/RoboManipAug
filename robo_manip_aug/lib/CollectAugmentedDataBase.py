@@ -99,6 +99,12 @@ class CollectAugmentedDataBase(TeleopBase):
             help="Return to the center of the acceptable region",
         )
 
+        parser.add_argument(
+            "--auto_mode",
+            action="store_true",
+            help="Whether to enable automatic mode that does not wait for key inputs",
+        )
+
         super().setup_args(parser)
 
         if self.args.replay_log is not None:
@@ -345,7 +351,7 @@ class CollectAugmentedDataBase(TeleopBase):
     def manage_phase(self):
         key = cv2.waitKey(1)
         if self.phase_manager.phase == Phase.INITIAL:
-            if key == ord("n"):
+            if key == ord("n") or self.args.auto_mode:
                 self.phase_manager.set_next_phase()
         elif self.phase_manager.phase == Phase.PRE_REACH:
             pre_reach_duration = 0.7  # [s]
@@ -359,7 +365,11 @@ class CollectAugmentedDataBase(TeleopBase):
                 )
                 self.phase_manager.set_next_phase()
         elif self.phase_manager.phase == Phase.GRASP:
-            if key == ord("n"):
+            grasp_duration = 0.5  # [s]
+            if key == ord("n") or (
+                self.args.auto_mode
+                and self.phase_manager.get_phase_elapsed_duration() > grasp_duration
+            ):
                 self.teleop_time_idx = 0
                 self.thread = threading.Thread(target=self.collect_data)
                 self.thread.start()
@@ -373,7 +383,7 @@ class CollectAugmentedDataBase(TeleopBase):
                 print("[CollectAugmentedDataBase] Press the 'n' key to quit.")
                 self.phase_manager.set_next_phase()
         elif self.phase_manager.phase == Phase.END:
-            if key == ord("n"):
+            if key == ord("n") or self.args.auto_mode:
                 self.quit_flag = True
         if key == 27:  # escape key
             self.quit_flag = True
