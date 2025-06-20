@@ -11,7 +11,6 @@ import pinocchio as pin
 from robo_manip_baselines.common import (
     DataKey,
     DataManager,
-    Phase,
     get_se3_from_pose,
 )
 from robo_manip_baselines.teleop import TeleopBase
@@ -144,7 +143,7 @@ class CollectAugmentedDataBase(TeleopBase):
 
             # Record data
             if (
-                self.phase_manager.phase == Phase.TELEOP
+                self.phase_manager.is_phase("Teleop")
                 and self.executing_augmented_motion
             ):
                 self.record_data(self.obs, info)  # noqa: F821
@@ -170,7 +169,7 @@ class CollectAugmentedDataBase(TeleopBase):
                 break
 
             iteration_duration = time.time() - iteration_start_time
-            if self.phase_manager.phase == Phase.TELEOP:
+            if self.phase_manager.is_phase("GraspPhase"):
                 iteration_duration_list.append(iteration_duration)
             if iteration_duration < self.env.unwrapped.dt:
                 time.sleep(self.env.unwrapped.dt - iteration_duration)
@@ -322,7 +321,7 @@ class CollectAugmentedDataBase(TeleopBase):
             time.sleep(self.env.unwrapped.dt)
 
     def set_arm_command(self):
-        if self.phase_manager.phase == Phase.TELEOP:
+        if self.phase_manager.is_phase("TeleopPhase"):
             if self.follow_demo_info is None:
                 self.motion_interpolator.update()
             else:
@@ -342,7 +341,7 @@ class CollectAugmentedDataBase(TeleopBase):
                     self.follow_demo_info["current_time_idx"] += 1
 
     def set_gripper_command(self):
-        if self.phase_manager.phase == Phase.GRASP:
+        if self.phase_manager.is_phase("GraspPhase"):
             self.motion_manager.set_command_data(
                 DataKey.COMMAND_GRIPPER_JOINT_POS,
                 self.env.action_space.high[self.env.unwrapped.gripper_joint_idxes],
@@ -350,21 +349,21 @@ class CollectAugmentedDataBase(TeleopBase):
 
     def manage_phase(self):
         key = cv2.waitKey(1)
-        if self.phase_manager.phase == Phase.INITIAL:
+        if self.phase_manager.is_phase("InitialTeleopPhase"):
             if key == ord("n") or self.args.auto_mode:
                 self.phase_manager.set_next_phase()
-        elif self.phase_manager.phase == Phase.PRE_REACH:
+        elif self.phase_manager.is_phase("ReachPhase1"):
             pre_reach_duration = 0.7  # [s]
             if self.phase_manager.get_phase_elapsed_duration() > pre_reach_duration:
                 self.phase_manager.set_next_phase()
-        elif self.phase_manager.phase == Phase.REACH:
+        elif self.phase_manager.is_phase("ReachPhase2"):
             reach_duration = 0.3  # [s]
             if self.phase_manager.get_phase_elapsed_duration() > reach_duration:
                 print(
                     "[CollectAugmentedDataBase] Press the 'n' key to start data collection."
                 )
                 self.phase_manager.set_next_phase()
-        elif self.phase_manager.phase == Phase.GRASP:
+        elif self.phase_manager.is_phase("GraspPhase"):
             grasp_duration = 0.5  # [s]
             if key == ord("n") or (
                 self.args.auto_mode
@@ -376,13 +375,13 @@ class CollectAugmentedDataBase(TeleopBase):
                 self.thread.join(0.1)
                 print("[CollectAugmentedDataBase] Start a thread for data collection.")
                 self.phase_manager.set_next_phase()
-        elif self.phase_manager.phase == Phase.TELEOP:
+        elif self.phase_manager.is_phase("TeleopPhase"):
             self.teleop_time_idx += 1
             if not self.thread.is_alive():
                 print("[CollectAugmentedDataBase] Finish a thread for data collection.")
                 print("[CollectAugmentedDataBase] Press the 'n' key to quit.")
                 self.phase_manager.set_next_phase()
-        elif self.phase_manager.phase == Phase.END:
+        elif self.phase_manager.is_phase("EndTeleopPhase"):
             if key == ord("n") or self.args.auto_mode:
                 self.quit_flag = True
         if key == 27:  # escape key
