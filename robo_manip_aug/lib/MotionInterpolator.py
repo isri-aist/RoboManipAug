@@ -3,7 +3,11 @@ from enum import Enum
 
 import numpy as np
 import pinocchio as pin
-from robo_manip_baselines.common import DataKey
+from robo_manip_baselines.common import (
+    DataKey,
+    get_pose_from_se3,
+    get_se3_from_pose,
+)
 
 
 class MotionInterpolator(object):
@@ -47,9 +51,13 @@ class MotionInterpolator(object):
         self.duration = duration
 
         if self.target_space == self.TargetSpace.JOINT:
-            self.start_state = self.motion_manager.joint_pos.copy()
+            self.start_state = self.motion_manager.get_data(
+                DataKey.COMMAND_JOINT_POS
+            ).copy()
         elif self.target_space == self.TargetSpace.EEF:
-            self.start_state = self.motion_manager.target_se3.copy()
+            self.start_state = get_se3_from_pose(
+                self.motion_manager.get_data(DataKey.COMMAND_EEF_POSE)
+            ).copy()
         self.start_time = self.env.unwrapped.get_time()
 
         if self.duration is None:
@@ -92,7 +100,8 @@ class MotionInterpolator(object):
                 current_ratio * pin.log(self.start_state.actInv(self.target_state))
             )
             self.motion_manager.set_command_data(
-                DataKey.COMMAND_EEF_POSE, self.start_state * delta_state
+                DataKey.COMMAND_EEF_POSE,
+                get_pose_from_se3(self.start_state * delta_state),
             )
 
     def wait(self, clear_target=True):

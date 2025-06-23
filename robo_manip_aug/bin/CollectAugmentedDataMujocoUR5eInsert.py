@@ -1,6 +1,6 @@
 import gymnasium as gym
 import numpy as np
-from robo_manip_baselines.common import DataKey, Phase
+from robo_manip_baselines.common import DataKey
 
 from robo_manip_aug import CollectAugmentedDataBase
 
@@ -13,7 +13,7 @@ class CollectAugmentedDataMujocoUR5eInsert(CollectAugmentedDataBase):
         self.demo_name = self.args.demo_name or "MujocoUR5eInsert"
 
     def set_gripper_command(self):
-        if self.phase_manager.phase == Phase.GRASP:
+        if self.phase_manager.is_phase("GraspPhase"):
             self.motion_manager.set_command_data(
                 DataKey.COMMAND_GRIPPER_JOINT_POS, np.array([170.0])
             )

@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 import pinocchio as pin
 from robo_manip_baselines.common import (
+    ArmConfig,
     DataKey,
     DataManager,
     get_se3_from_pose,
@@ -110,9 +111,10 @@ class CollectAugmentedDataBase(TeleopBase):
             raise ValueError("replay_log must not be specified.")
 
     def run(self):
+        base_demo_format = os.path.splitext(self.args.base_demo_path.rstrip("/"))[-1]
         # Create a symbolic link to the base demo file
-        symlink_filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/base_demo.hdf5".format(
-            self.demo_name, self.datetime_now
+        symlink_filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/base_demo{}".format(
+            self.demo_name, self.datetime_now, base_demo_format
         )
         os.makedirs(os.path.dirname(symlink_filename), exist_ok=True)
         os.symlink(path.abspath(self.args.base_demo_path), symlink_filename)
@@ -125,7 +127,7 @@ class CollectAugmentedDataBase(TeleopBase):
         self.save_flag = False
         self.executing_augmented_motion = False
         self.follow_demo_info = None
-        iteration_duration_list = []
+        self.iteration_duration_list = []
 
         while True:
             iteration_start_time = time.time()
@@ -135,21 +137,24 @@ class CollectAugmentedDataBase(TeleopBase):
                 self.reset()
                 self.reset_flag = False
 
-            # Set command
-            self.set_command()
+            self.phase_manager.pre_update()
+            self.motion_manager.draw_markers()
+
+            self.set_gripper_command()
+            self.set_arm_command()
 
             # Set action
             action = self.motion_manager.get_command_data(DataKey.COMMAND_JOINT_POS)
 
             # Record data
             if (
-                self.phase_manager.is_phase("Teleop")
+                self.phase_manager.is_phase("TeleopPhase")
                 and self.executing_augmented_motion
             ):
-                self.record_data(self.obs, info)  # noqa: F821
+                self.record_data()  # noqa: F821
 
             # Step environment
-            self.obs, _, _, _, info = self.env.step(action)
+            self.obs, self.reward, _, _, self.info = self.env.step(action)
 
             # Save data
             if self.save_flag:
@@ -157,11 +162,13 @@ class CollectAugmentedDataBase(TeleopBase):
                 self.save_data()
 
             # Draw images
-            self.draw_image(info)
+            self.draw_image()
 
             # Draw point clouds
             if self.args.enable_3d_plot:
-                self.draw_point_cloud(info)
+                self.draw_point_cloud()
+
+            self.phase_manager.post_update()
 
             # Manage phase
             self.manage_phase()
@@ -169,9 +176,12 @@ class CollectAugmentedDataBase(TeleopBase):
                 break
 
             iteration_duration = time.time() - iteration_start_time
-            if self.phase_manager.is_phase("GraspPhase"):
-                iteration_duration_list.append(iteration_duration)
-            if iteration_duration < self.env.unwrapped.dt:
+            if self.phase_manager.is_phases(["TeleopPhase", "ReplayPhase"]) and (
+                self.teleop_time_idx > 0
+            ):
+                self.iteration_duration_list.append(iteration_duration)
+
+            if (not self.auto_mode) and (iteration_duration < self.env.unwrapped.dt):
                 time.sleep(self.env.unwrapped.dt - iteration_duration)
 
         # self.env.close()
@@ -275,7 +285,11 @@ class CollectAugmentedDataBase(TeleopBase):
                 # Move to convergence point
                 joint_pos = acceptable_region[convergence_key]["joint_pos"]
                 vel_limit = np.full_like(joint_pos, np.deg2rad(20.0))  # [rad/s]
-                vel_limit[self.env.unwrapped.gripper_joint_idxes] = 100.0
+                for body_config in self.env.unwrapped.body_config_list:
+                    if isinstance(body_config, ArmConfig):
+                        gripper_joint_idxes = body_config.gripper_joint_idxes
+                        break
+                vel_limit[gripper_joint_idxes] = 100.0
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.JOINT,
                     joint_pos,
@@ -348,43 +362,45 @@ class CollectAugmentedDataBase(TeleopBase):
             )
 
     def manage_phase(self):
-        key = cv2.waitKey(1)
+        self.key = cv2.waitKey(1)
         if self.phase_manager.is_phase("InitialTeleopPhase"):
-            if key == ord("n") or self.args.auto_mode:
-                self.phase_manager.set_next_phase()
+            self.phase_manager.check_transition()
         elif self.phase_manager.is_phase("ReachPhase1"):
             pre_reach_duration = 0.7  # [s]
             if self.phase_manager.get_phase_elapsed_duration() > pre_reach_duration:
-                self.phase_manager.set_next_phase()
+                self.phase_manager.check_transition()
         elif self.phase_manager.is_phase("ReachPhase2"):
             reach_duration = 0.3  # [s]
             if self.phase_manager.get_phase_elapsed_duration() > reach_duration:
                 print(
                     "[CollectAugmentedDataBase] Press the 'n' key to start data collection."
                 )
-                self.phase_manager.set_next_phase()
+                self.phase_manager.check_transition()
         elif self.phase_manager.is_phase("GraspPhase"):
             grasp_duration = 0.5  # [s]
-            if key == ord("n") or (
+            if (
                 self.args.auto_mode
                 and self.phase_manager.get_phase_elapsed_duration() > grasp_duration
             ):
+                self.phase_manager.check_transition()
+        elif self.phase_manager.is_phase("StandbyTeleopPhase"):
+            if self.key == ord("n"):
                 self.teleop_time_idx = 0
                 self.thread = threading.Thread(target=self.collect_data)
                 self.thread.start()
                 self.thread.join(0.1)
                 print("[CollectAugmentedDataBase] Start a thread for data collection.")
-                self.phase_manager.set_next_phase()
+                self.phase_manager.check_transition()
         elif self.phase_manager.is_phase("TeleopPhase"):
             self.teleop_time_idx += 1
             if not self.thread.is_alive():
                 print("[CollectAugmentedDataBase] Finish a thread for data collection.")
                 print("[CollectAugmentedDataBase] Press the 'n' key to quit.")
-                self.phase_manager.set_next_phase()
+                self.phase_manager.check_transition()
         elif self.phase_manager.is_phase("EndTeleopPhase"):
-            if key == ord("n") or self.args.auto_mode:
+            if self.key == ord("n") or self.args.auto_mode:
                 self.quit_flag = True
-        if key == 27:  # escape key
+        if self.key == 27:  # escape key
             self.quit_flag = True
 
     def save_data(self):
@@ -405,7 +421,7 @@ class CollectAugmentedDataBase(TeleopBase):
             )
 
         # Dump to file
-        filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/region{:0>3}/{}_augmented_region{:0>3}_{:0>2}.hdf5".format(
+        filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/region{:0>3}/{}_augmented_region{:0>3}_{:0>2}.rmb".format(
             self.demo_name,
             self.datetime_now,
             self.acceptable_region_idx,

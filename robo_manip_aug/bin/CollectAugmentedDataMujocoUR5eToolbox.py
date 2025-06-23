@@ -1,5 +1,5 @@
 import gymnasium as gym
-from robo_manip_baselines.common import DataKey, Phase
+from robo_manip_baselines.common import DataKey
 
 from robo_manip_aug import CollectAugmentedDataBase
 
@@ -12,7 +12,7 @@ class CollectAugmentedDataMujocoUR5eToolbox(CollectAugmentedDataBase):
         self.demo_name = self.args.demo_name or "MujocoUR5eToolbox"
 
     def set_gripper_command(self):
-        if self.phase_manager.phase == Phase.GRASP:
+        if self.phase_manager.is_phase("GraspPhase"):
             self.motion_manager.set_command_data(
                 DataKey.COMMAND_GRIPPER_JOINT_POS,
                 self.env.action_space.low[self.env.unwrapped.gripper_joint_idxes],
