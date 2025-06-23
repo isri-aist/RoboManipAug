@@ -54,7 +54,7 @@ class VisualizeData3D(object):
 
     def setup_data(self):
         teleop_data_path_list = glob.glob(
-            path.join(self.args.teleop_data_dir, "**/*.hdf5"), recursive=True
+            path.join(self.args.teleop_data_dir, "**/*.rmb"), recursive=True
         )
         teleop_data_path_list.sort()
         print(

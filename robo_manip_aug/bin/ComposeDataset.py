@@ -19,7 +19,7 @@ class ComposeDataset(object):
     def run(self):
         os.makedirs(self.args.learning_data_dir, exist_ok=True)
 
-        base_demo_filename = "base_demo.hdf5"
+        base_demo_filename = "base_demo.rmb"
         src_base_demo_path = os.path.join(
             self.args.augmented_data_dir, base_demo_filename
         )
@@ -33,6 +33,8 @@ class ComposeDataset(object):
         os.symlink(path.abspath(src_base_demo_path), dest_base_demo_path)
 
         for subdir in os.listdir(self.args.augmented_data_dir):
+            if base_demo_filename in subdir:
+                continue
             src_subdir_path = os.path.join(self.args.augmented_data_dir, subdir)
 
             if not os.path.isdir(src_subdir_path):
@@ -52,7 +54,9 @@ class ComposeDataset(object):
                 src_file_path = os.path.join(src_subdir_path, filename)
                 dest_file_path = os.path.join(dest_subdir_path, filename)
 
-                if os.path.exists(dest_file_path):
+                if os.path.exists(dest_file_path) and "base_demo.rmb" not in str(
+                    dest_file_path
+                ):
                     raise RuntimeError(
                         f"[ComposeDataset] File already exists: {dest_file_path}"
                     )
