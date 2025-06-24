@@ -16,14 +16,6 @@ class CollectAugmentedDataRealUR5eDemo(CollectAugmentedDataBase):
     def setup_args(self, parser=None):
         super().setup_args(parser)
 
-        parser.add_argument(
-            "--config",
-            type=str,
-            required=True,
-            default=None,
-            help="Config file(.yaml) for UR5e.",
-        )
-
     def setup_env(self):
         with open(self.args.config, "r") as f:
             config = yaml.safe_load(f)

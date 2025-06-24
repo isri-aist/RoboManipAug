@@ -105,6 +105,13 @@ class CollectAugmentedDataBase(TeleopBase):
             help="Whether to enable automatic mode that does not wait for key inputs",
         )
 
+        parser.add_argument(
+            "--config",
+            type=str,
+            default=None,
+            help="Config file(.yaml) for some envs.",
+        )
+
         super().setup_args(parser)
 
         if self.args.replay_log is not None:
@@ -377,12 +384,7 @@ class CollectAugmentedDataBase(TeleopBase):
                 )
                 self.phase_manager.check_transition()
         elif self.phase_manager.is_phase("GraspPhase"):
-            grasp_duration = 0.5  # [s]
-            if (
-                self.args.auto_mode
-                and self.phase_manager.get_phase_elapsed_duration() > grasp_duration
-            ):
-                self.phase_manager.check_transition()
+            self.phase_manager.check_transition()
         elif self.phase_manager.is_phase("StandbyTeleopPhase"):
             if self.key == ord("n"):
                 self.teleop_time_idx = 0
@@ -395,11 +397,16 @@ class CollectAugmentedDataBase(TeleopBase):
             self.teleop_time_idx += 1
             if not self.thread.is_alive():
                 print("[CollectAugmentedDataBase] Finish a thread for data collection.")
-                print("[CollectAugmentedDataBase] Press the 'n' key to quit.")
+                print("[CollectAugmentedDataBase] Press the 'n' key to quit teleop.")
                 self.phase_manager.check_transition()
         elif self.phase_manager.is_phase("EndTeleopPhase"):
-            if self.key == ord("n") or self.args.auto_mode:
+            if self.args.auto_mode:
                 self.quit_flag = True
+            else:
+                print("[CollectAugmentedDataBase] Data augmentation successed.")
+                print("[CollectAugmentedDataBase] Press the 'n' key to quit.")
+                if self.key == ord("n"):
+                    self.quit_flag = True
         if self.key == 27:  # escape key
             self.quit_flag = True
 
