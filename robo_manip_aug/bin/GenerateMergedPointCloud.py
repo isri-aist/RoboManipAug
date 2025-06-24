@@ -26,6 +26,9 @@ class GenerateMergedPointCloud(object):
         )
         parser.add_argument("teleop_data_path", type=str)
         parser.add_argument("point_cloud_path", type=str)
+        parser.add_argument(
+            "--target_camera", type=str, default="hand", help="name of camera."
+        )
         parser.add_argument("--skip", type=int, default=5)
         parser.add_argument("--image_skip", type=int, default=10)
         parser.add_argument("--near_clip", type=float, default=0.2)
@@ -35,11 +38,12 @@ class GenerateMergedPointCloud(object):
 
     def setup_data(self):
         self.data_manager = DataManager(env=None)
+        self.target_camera = self.args.target_camera
 
         load_keys = [
             DataKey.MEASURED_EEF_POSE,
-            DataKey.get_rgb_image_key("hand"),
-            DataKey.get_depth_image_key("hand"),
+            DataKey.get_rgb_image_key(self.target_camera),
+            DataKey.get_depth_image_key(self.target_camera),
         ]
         self.data_manager.load_data(self.args.teleop_data_path, load_keys)
 
@@ -54,13 +58,13 @@ class GenerateMergedPointCloud(object):
             :: self.args.skip
         ]
         rgb_image_seq = self.data_manager.get_data_seq(
-            DataKey.get_rgb_image_key("hand")
+            DataKey.get_rgb_image_key(self.target_camera)
         )[:: self.args.skip, :: self.args.image_skip, :: self.args.image_skip]
         depth_image_seq = self.data_manager.get_data_seq(
-            DataKey.get_depth_image_key("hand")
+            DataKey.get_depth_image_key(self.target_camera)
         )[:: self.args.skip, :: self.args.image_skip, :: self.args.image_skip]
         fovy = self.data_manager.get_meta_data(
-            DataKey.get_depth_image_key("hand") + "_fovy"
+            DataKey.get_depth_image_key(self.target_camera) + "_fovy"
         )
 
         merged_point_cloud = o3d.geometry.PointCloud()
