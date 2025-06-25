@@ -12,11 +12,23 @@ from robo_manip_baselines.common import (
     ArmConfig,
     DataKey,
     DataManager,
+    PhaseBase,
     get_se3_from_pose,
 )
 from robo_manip_baselines.teleop import TeleopBase
 
 from robo_manip_aug import MotionInterpolator
+
+
+class EndCollectAugmentedDataPhase(PhaseBase):
+    def start(self):
+        super().start()
+
+        print(f"[{self.op.__class__.__name__}] Finished Collecting augmented data.")
+
+    def post_update(self):
+        if self.op.key == ord("n"):
+            self.op.quit_flag = True
 
 
 def sample_points_on_sphere(center, radius, num_points):
@@ -46,6 +58,7 @@ class CollectAugmentedDataBase(TeleopBase):
         super().__init__()
 
         self.data_manager.meta_data["format"] = "RoboManipBaselines-AugmentedData"
+        self.phase_manager.phase_order[-1] = EndCollectAugmentedDataPhase(op=self)
 
         # Setup data manager for base data
         self.base_data_manager = DataManager(self.env, demo_name=self.demo_name)
@@ -399,12 +412,10 @@ class CollectAugmentedDataBase(TeleopBase):
                 print("[CollectAugmentedDataBase] Finish a thread for data collection.")
                 print("[CollectAugmentedDataBase] Press the 'n' key to quit teleop.")
                 self.phase_manager.check_transition()
-        elif self.phase_manager.is_phase("EndTeleopPhase"):
+        elif self.phase_manager.is_phase("EndCollectAugmentedDataPhase"):
             if self.args.auto_mode:
                 self.quit_flag = True
             else:
-                print("[CollectAugmentedDataBase] Data augmentation successed.")
-                print("[CollectAugmentedDataBase] Press the 'n' key to quit.")
                 if self.key == ord("n"):
                     self.quit_flag = True
         if self.key == 27:  # escape key
