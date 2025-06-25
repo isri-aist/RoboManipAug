@@ -415,9 +415,6 @@ class CollectAugmentedDataBase(TeleopBase):
         elif self.phase_manager.is_phase("EndCollectAugmentedDataPhase"):
             if self.args.auto_mode:
                 self.quit_flag = True
-            else:
-                if self.key == ord("n"):
-                    self.quit_flag = True
         if self.key == 27:  # escape key
             self.quit_flag = True
 
