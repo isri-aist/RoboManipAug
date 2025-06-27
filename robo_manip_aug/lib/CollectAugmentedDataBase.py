@@ -24,7 +24,7 @@ class EndCollectAugmentedDataPhase(PhaseBase):
     def start(self):
         super().start()
 
-        print(f"[{self.op.__class__.__name__}] Finished Collecting augmented data.")
+        print(f"[{self.op.__class__.__name__}] Finished collecting augmented data.")
 
     def post_update(self):
         if self.op.key == ord("n"):
