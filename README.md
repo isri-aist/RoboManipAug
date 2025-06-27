@@ -58,7 +58,7 @@ $ python ./bin/VisualizeData3D.py ./augmented_data/sample/MujocoUR5eInsert/ --ba
 #### [Optional] Replay the augmented data:
 ```console
 $ cd robo_manip_baselines
-$ python ./bin/Teleop.py MujocoUR5eInsert --replay_log ../../../RoboManipAug/robo_manip_aug/augmented_data/sample/MujocoUR5eInsert/region000/MujocoUR5eInsert_augmented_region000_00.rmb --replay_keys command_eef_pose_rel
+$ python ./bin/Teleop.py MujocoUR5eInsert --replay_log ../../RoboManipAug/robo_manip_aug/augmented_data/sample/MujocoUR5eInsert/region000/MujocoUR5eInsert_augmented_region000_00.rmb --replay_keys command_eef_pose_rel
 ```
 
 ### Policy
@@ -73,7 +73,7 @@ By adding the `--num_data_per_region <N>` option, you can specify the number of 
 #### Train policy:
 ```console
 $ cd robo_manip_baselines
-$ python ./bin/Train.py Mlp --dataset_dir ../../../RoboManipAug/robo_manip_aug/learning_data/sample/MujocoUR5eInsert/ --checkpoint_dir ./checkpoint/sample/MujocoUR5eInsert/ --state_keys --action_keys command_eef_pose_rel --camera_names hand --train_ratio 1.0 --val_ratio 0.2
+$ python ./bin/Train.py Mlp --dataset_dir ../../RoboManipAug/robo_manip_aug/learning_data/sample/MujocoUR5eInsert/ --checkpoint_dir ./checkpoint/sample/MujocoUR5eInsert/ --state_keys --action_keys command_eef_pose_rel --camera_names hand --train_ratio 1.0 --val_ratio 0.2
 ```
 
 #### Rollout policy:
