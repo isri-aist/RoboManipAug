@@ -101,6 +101,18 @@ class CollectAugmentedDataBase(TeleopBase):
             help="Scale of randomness to add to end-effector rotation",
         )
         parser.add_argument(
+            "--rotation_random_angle",
+            type=float,
+            default=None,
+            help="Angle of randomness to add to end-effector rotation [deg]",
+        )
+        parser.add_argument(
+            "--interp_duration",
+            type=float,
+            default=2.0,
+            help="Interpolation duration for augmented trajectory [s]",
+        )
+        parser.add_argument(
             "--overwrite_radius",
             type=float,
             default=None,
@@ -325,12 +337,14 @@ class CollectAugmentedDataBase(TeleopBase):
                 # Move to sampled point
                 sample_rot = center_se3.rotation @ sample_random_rotation(
                     self.args.rotation_random_scale * radius
+                    if self.args.rotation_random_angle is None
+                    else np.deg2rad(self.args.rotation_random_angle)
                 )
                 eef_se3 = pin.SE3(sample_rot, sample_pos) * eef_offset_se3.inverse()
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.EEF,
                     eef_se3,
-                    duration=2.0,  # [s]
+                    duration=self.args.interp_duration,  # [s]
                 )
                 self.aug_end_time_idx = acceptable_region[convergence_key]["time_idx"]
                 self.executing_augmented_motion = True
