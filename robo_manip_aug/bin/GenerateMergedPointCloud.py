@@ -27,7 +27,7 @@ class GenerateMergedPointCloud(object):
         parser.add_argument("teleop_data_path", type=str)
         parser.add_argument("point_cloud_path", type=str)
         parser.add_argument(
-            "--target_camera", type=str, default="hand", help="name of camera."
+            "--camera_name", type=str, default="hand", help="name of camera."
         )
         parser.add_argument("--skip", type=int, default=5)
         parser.add_argument("--image_skip", type=int, default=10)
@@ -38,16 +38,16 @@ class GenerateMergedPointCloud(object):
 
     def setup_data(self):
         self.data_manager = DataManager(env=None)
-        self.target_camera = self.args.target_camera
 
         load_keys = [
             DataKey.MEASURED_EEF_POSE,
-            DataKey.get_rgb_image_key(self.target_camera),
-            DataKey.get_depth_image_key(self.target_camera),
+            DataKey.get_rgb_image_key(self.args.camera_name),
+            DataKey.get_depth_image_key(self.args.camera_name),
         ]
         self.data_manager.load_data(self.args.teleop_data_path, load_keys)
 
-        # Check the calculation of the transformation from end-effector to camera from the MuJoCo model
+        # Set of the transformation from end-effector to camera in the MuJoCo model
+        # TODO: This part needs to be hardcoded for each robot
         self.trans_from_eef_to_camera = get_trans_from_rot_pos(
             o3d.geometry.get_rotation_matrix_from_xyz([0.0, 0.0, np.pi]),
             np.array([0.0, 0.05, 0.0]),
@@ -58,13 +58,13 @@ class GenerateMergedPointCloud(object):
             :: self.args.skip
         ]
         rgb_image_seq = self.data_manager.get_data_seq(
-            DataKey.get_rgb_image_key(self.target_camera)
+            DataKey.get_rgb_image_key(self.args.camera_name)
         )[:: self.args.skip, :: self.args.image_skip, :: self.args.image_skip]
         depth_image_seq = self.data_manager.get_data_seq(
-            DataKey.get_depth_image_key(self.target_camera)
+            DataKey.get_depth_image_key(self.args.camera_name)
         )[:: self.args.skip, :: self.args.image_skip, :: self.args.image_skip]
         fovy = self.data_manager.get_meta_data(
-            DataKey.get_depth_image_key(self.target_camera) + "_fovy"
+            DataKey.get_depth_image_key(self.args.camera_name) + "_fovy"
         )
 
         merged_point_cloud = o3d.geometry.PointCloud()
