@@ -197,8 +197,8 @@ class CollectAugmentedDataBase(TeleopBase):
             self.draw_image()
 
             # Draw point clouds
-            if self.args.enable_3d_plot:
-                self.draw_point_cloud()
+            if self.args.plot_pointcloud:
+                self.draw_pointcloud()
 
             self.phase_manager.post_update()
 

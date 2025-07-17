@@ -6,7 +6,7 @@ import open3d as o3d
 from robo_manip_baselines.common import (
     DataKey,
     DataManager,
-    convert_depth_image_to_point_cloud,
+    convert_depth_image_to_pointcloud,
     get_rot_pos_from_pose,
 )
 from tqdm import tqdm
@@ -73,7 +73,7 @@ class GenerateMergedPointCloud(object):
             total=len(eef_pose_seq),
             desc="[GenerateMergedPointCloud] Merge point clouds",
         ):
-            xyz_array, rgb_array = convert_depth_image_to_point_cloud(
+            xyz_array, rgb_array = convert_depth_image_to_pointcloud(
                 depth_image,
                 fovy=fovy,
                 rgb_image=rgb_image,
