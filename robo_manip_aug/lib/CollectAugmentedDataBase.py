@@ -1,4 +1,3 @@
-import argparse
 import os
 import pickle
 import threading
@@ -13,22 +12,12 @@ from robo_manip_baselines.common import (
     DataKey,
     DataManager,
     PhaseBase,
+    PhaseManager,
     get_se3_from_pose,
 )
 from robo_manip_baselines.teleop import TeleopBase
 
 from robo_manip_aug import MotionInterpolator
-
-
-class EndCollectAugmentedDataPhase(PhaseBase):
-    def start(self):
-        super().start()
-
-        print(f"[{self.op.__class__.__name__}] Finished collecting augmented data.")
-
-    def post_update(self):
-        if self.op.key == ord("n"):
-            self.op.quit_flag = True
 
 
 def sample_points_on_sphere(center, radius, num_points):
@@ -53,11 +42,73 @@ def sample_random_rotation(max_angle):
     return pin.AngleAxis(angle, axis).toRotationMatrix()
 
 
+class InitialCollectPhase(PhaseBase):
+    def start(self):
+        super().start()
+
+        if not self.op.auto_mode:
+            print(f"[{self.op.__class__.__name__}] Press the 'n' key to proceed.")
+
+    def check_transition(self):
+        return self.op.auto_mode or (self.op.key == ord("n"))
+
+
+class CollectPhase(PhaseBase):
+    def start(self):
+        super().start()
+
+        self.op.teleop_time_idx = 0
+
+        self.thread = threading.Thread(target=self.op.collect_data)
+        self.thread.start()
+        self.thread.join(0.1)
+        print(f"[{self.op.__class__.__name__}] Start a thread for data collection.")
+
+    def pre_update(self):
+        if self.op.follow_demo_info is None:
+            self.op.motion_interpolator.update()
+        else:
+            self.op.motion_manager.set_command_data(
+                DataKey.COMMAND_JOINT_POS,
+                self.op.base_data_manager.get_single_data(
+                    DataKey.COMMAND_JOINT_POS,
+                    self.op.follow_demo_info["current_time_idx"],
+                ),
+            )
+            if (
+                self.op.follow_demo_info["current_time_idx"]
+                == self.op.follow_demo_info["end_time_idx"]
+            ):
+                self.op.follow_demo_info = None
+            else:
+                self.op.follow_demo_info["current_time_idx"] += 1
+
+    def post_update(self):
+        self.op.teleop_time_idx += 1
+
+    def check_transition(self):
+        if self.thread.is_alive():
+            return False
+        else:
+            print(f"[{self.op.__class__.__name__}] Finished collecting augmented data.")
+            return True
+
+
+class EndCollectPhase(PhaseBase):
+    def start(self):
+        super().start()
+
+        if not self.op.auto_mode:
+            print(f"[{self.op.__class__.__name__}] Press the 'n' key to exit.")
+
+    def post_update(self):
+        if (self.op.key == ord("n")) or self.op.auto_mode:
+            self.op.quit_flag = True
+
+
 class CollectAugmentedDataBase(TeleopBase):
     def __init__(self):
         super().__init__()
-
-        self.phase_manager.phase_order[-1] = EndCollectAugmentedDataPhase(op=self)
 
         # Setup data manager for base data
         self.base_data_manager = DataManager(self.env, demo_name=self.demo_name)
@@ -71,15 +122,20 @@ class CollectAugmentedDataBase(TeleopBase):
             and isinstance(self.motion_manager.body_manager_list[0], ArmManager)
         ):
             raise RuntimeError(
-                f"[{self.__class__.__name__}] This program assumes that the body managers consist of only a single ArmManager."
+                f"[{self.__class__.__name__}] It is assumed that the body managers consist of only a single ArmManager."
             )
 
-    def setup_args(self, parser=None):
-        if parser is None:
-            parser = argparse.ArgumentParser(
-                formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    def setup_args(self, parser=None, argv=None):
+        super().setup_args(parser, argv)
+
+        if self.args.replay_log is not None:
+            raise NotImplementedError(
+                f'[{self.__class__.__name__}] The "replay_log" option is not supported.'
             )
 
+        self.auto_mode = self.args.auto_mode
+
+    def set_additional_args(self, parser):
         parser.add_argument(
             "base_demo_path",
             type=str,
@@ -90,6 +146,7 @@ class CollectAugmentedDataBase(TeleopBase):
             type=str,
             help="Path of annotation data describing the region of data augmentation",
         )
+
         parser.add_argument(
             "--without_merge_base_demo",
             action="store_true",
@@ -137,17 +194,14 @@ class CollectAugmentedDataBase(TeleopBase):
             help="Whether to enable automatic mode that does not wait for key inputs",
         )
 
-        parser.add_argument(
-            "--config",
-            type=str,
-            default=None,
-            help="Config file(.yaml) for some envs.",
-        )
-
-        super().setup_args(parser)
-
-        if self.args.replay_log is not None:
-            raise ValueError("replay_log must not be specified.")
+    def setup_phase_manager(self):
+        phase_order = [
+            InitialCollectPhase(self),
+            *self.get_pre_motion_phases(),
+            CollectPhase(self),
+            EndCollectPhase(self),
+        ]
+        self.phase_manager = PhaseManager(phase_order)
 
     def run(self):
         # Create a symbolic link to the base demo file
@@ -158,7 +212,7 @@ class CollectAugmentedDataBase(TeleopBase):
         os.makedirs(os.path.dirname(symlink_filename), exist_ok=True)
         os.symlink(path.abspath(self.args.base_demo_path), symlink_filename)
         print(
-            f"[{self.op.__class__.__name__}] Create a symbolic link to the base demo file: {symlink_filename}"
+            f"[{self.__class__.__name__}] Create a symbolic link to the base demo file: {symlink_filename}"
         )
 
         self.reset_flag = True
@@ -171,7 +225,6 @@ class CollectAugmentedDataBase(TeleopBase):
         while True:
             iteration_start_time = time.time()
 
-            # Reset
             if self.reset_flag:
                 self.reset()
                 self.reset_flag = False
@@ -179,43 +232,42 @@ class CollectAugmentedDataBase(TeleopBase):
             self.phase_manager.pre_update()
             self.motion_manager.draw_markers()
 
-            self.set_gripper_command()
-            self.set_arm_command()
+            action = np.concatenate(
+                [
+                    self.motion_manager.get_command_data(key)
+                    for key in self.env.unwrapped.command_keys_for_step
+                ]
+            )
 
-            # Set action
-            action = self.motion_manager.get_command_data(DataKey.COMMAND_JOINT_POS)
-
-            # Record data
             if (
-                self.phase_manager.is_phase("TeleopPhase")
+                self.phase_manager.is_phase("CollectPhase")
                 and self.executing_augmented_motion
             ):
                 self.record_data()
 
-            # Step environment
             self.obs, self.reward, _, _, self.info = self.env.step(action)
 
-            # Save data
             if self.save_flag:
                 self.save_flag = False
                 self.save_data()
 
-            # Draw images
             self.draw_image()
 
-            # Draw point clouds
             if self.args.plot_pointcloud:
                 self.draw_pointcloud()
 
             self.phase_manager.post_update()
 
-            # Manage phase
-            self.manage_phase()
+            self.key = cv2.waitKey(1)
+            self.phase_manager.check_transition()
+
+            if self.key == 27:  # escape key
+                self.quit_flag = True
             if self.quit_flag:
                 break
 
             iteration_duration = time.time() - iteration_start_time
-            if self.phase_manager.is_phases(["TeleopPhase", "ReplayPhase"]) and (
+            if self.phase_manager.is_phase("CollectPhase") and (
                 self.teleop_time_idx > 0
             ):
                 self.iteration_duration_list.append(iteration_duration)
@@ -226,21 +278,22 @@ class CollectAugmentedDataBase(TeleopBase):
         # self.env.close()
 
     def reset(self):
-        # Reset managers
+        # Reset motion manager
         self.motion_manager.reset()
-        self.phase_manager.reset()
+
+        # Reset data manager
         self.data_manager.reset()
         self.base_data_manager.reset()
 
         # Load base demo data
         print(
-            f"[{self.op.__class__.__name__}] Load teleoperation data: {self.args.base_demo_path}"
+            f"[{self.__class__.__name__}] Load teleoperation data: {self.args.base_demo_path}"
         )
         self.base_data_manager.load_data(self.args.base_demo_path)
 
         # Load annotation data
         print(
-            f"[{self.op.__class__.__name__}] Load annotation data: {self.args.annotation_path}"
+            f"[{self.__class__.__name__}] Load annotation data: {self.args.annotation_path}"
         )
         with open(self.args.annotation_path, "rb") as f:
             self.annotation_data = pickle.load(f)
@@ -249,14 +302,13 @@ class CollectAugmentedDataBase(TeleopBase):
         world_idx = self.base_data_manager.get_meta_data("world_idx")
         self.data_manager.setup_env_world(world_idx)
         self.base_data_manager.world_idx = self.data_manager.world_idx
-        self.obs, info = self.env.reset()
+        self.env.reset(seed=self.args.seed)
+        print(
+            f"[{self.__class__.__name__}] Reset environment. demo_name: {self.demo_name}, world_idx: {self.data_manager.world_idx}"
+        )
 
-        print(
-            f"[{self.op.__class__.__name__}] demo_name: {self.demo_name}, world_idx: {self.data_manager.world_idx}"
-        )
-        print(
-            f"[{self.op.__class__.__name__}] Press the 'n' key to start automatic grasping."
-        )
+        # Reset phase manager
+        self.phase_manager.reset()
 
     def collect_data(self):
         eef_offset_se3 = get_se3_from_pose(self.annotation_data["eef_offset_pose"])
@@ -269,7 +321,7 @@ class CollectAugmentedDataBase(TeleopBase):
             list(self.annotation_data["acceptable_region_list"]) + [None]
         ):
             # Move along base demo motion
-            print(f"[{self.op.__class__.__name__}] Move along the base demo motion.")
+            print(f"[{self.__class__.__name__}] Move along the base demo motion.")
             self.follow_demo_info = {}
             if self.acceptable_region_idx == 0:
                 self.follow_demo_info["start_time_idx"] = 0
@@ -303,7 +355,7 @@ class CollectAugmentedDataBase(TeleopBase):
 
             # Sample end-effector position
             print(
-                f"[{self.op.__class__.__name__}] Collect data from acceptable region: "
+                f"[{self.__class__.__name__}] Collect data from acceptable region: "
                 f"{self.acceptable_region_idx+1} / {len(self.annotation_data['acceptable_region_list'])}"
             )
             center_se3 = get_se3_from_pose(acceptable_region["center"]["eef_pose"])
@@ -371,76 +423,6 @@ class CollectAugmentedDataBase(TeleopBase):
             if joint_vel < joint_vel_thre:
                 break
             time.sleep(self.env.unwrapped.dt)
-
-    def set_arm_command(self):
-        if self.phase_manager.is_phase("TeleopPhase"):
-            if self.follow_demo_info is None:
-                self.motion_interpolator.update()
-            else:
-                self.motion_manager.set_command_data(
-                    DataKey.COMMAND_JOINT_POS,
-                    self.base_data_manager.get_single_data(
-                        DataKey.COMMAND_JOINT_POS,
-                        self.follow_demo_info["current_time_idx"],
-                    ),
-                )
-                if (
-                    self.follow_demo_info["current_time_idx"]
-                    == self.follow_demo_info["end_time_idx"]
-                ):
-                    self.follow_demo_info = None
-                else:
-                    self.follow_demo_info["current_time_idx"] += 1
-
-    def set_gripper_command(self):
-        if self.phase_manager.is_phase("GraspPhase"):
-            self.motion_manager.set_command_data(
-                DataKey.COMMAND_GRIPPER_JOINT_POS,
-                self.env.action_space.high[self.env.unwrapped.gripper_joint_idxes],
-            )
-
-    def manage_phase(self):
-        self.key = cv2.waitKey(1)
-        if self.phase_manager.is_phase("InitialTeleopPhase"):
-            self.phase_manager.check_transition()
-        elif self.phase_manager.is_phase("ReachPhase1"):
-            pre_reach_duration = 0.7  # [s]
-            if self.phase_manager.get_phase_elapsed_duration() > pre_reach_duration:
-                self.phase_manager.check_transition()
-        elif self.phase_manager.is_phase("ReachPhase2"):
-            reach_duration = 0.3  # [s]
-            if self.phase_manager.get_phase_elapsed_duration() > reach_duration:
-                print(
-                    f"[{self.op.__class__.__name__}] Press the 'n' key to start data collection."
-                )
-                self.phase_manager.check_transition()
-        elif self.phase_manager.is_phase("GraspPhase"):
-            self.phase_manager.check_transition()
-        elif self.phase_manager.is_phase("StandbyTeleopPhase"):
-            if self.key == ord("n"):
-                self.teleop_time_idx = 0
-                self.thread = threading.Thread(target=self.collect_data)
-                self.thread.start()
-                self.thread.join(0.1)
-                print(
-                    f"[{self.op.__class__.__name__}] Start a thread for data collection."
-                )
-                self.phase_manager.check_transition()
-        elif self.phase_manager.is_phase("TeleopPhase"):
-            self.teleop_time_idx += 1
-            if not self.thread.is_alive():
-                print(
-                    f"[{self.op.__class__.__name__}] Finish a thread for data collection."
-                )
-                print(
-                    f"[{self.op.__class__.__name__}] Press the 'n' key to quit teleop."
-                )
-                self.phase_manager.check_transition()
-        elif self.phase_manager.is_phase("EndCollectAugmentedDataPhase"):
-            if self.args.auto_mode:
-                self.quit_flag = True
-        if self.key == 27:  # escape key
-            self.quit_flag = True
 
     def save_data(self):
         # Reverse motion data

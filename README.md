@@ -48,7 +48,7 @@ $ python ./bin/AnnotateAcceptableRegion.py ./teleop_data/sample/MujocoUR5eInsert
 ```console
 # Go to the top directory of RoboManipAug
 $ cd robo_manip_aug
-$ python ./bin/CollectAugmentedDataMujocoUR5eInsert.py ./teleop_data/sample/MujocoUR5eInsert_base_demo.rmb ./annotation_data/sample/MujocoUR5eInsert_annotation.pkl
+$ python ./bin/CollectAugmentedData.py MujocoUR5eInsert ./teleop_data/sample/MujocoUR5eInsert_base_demo.rmb ./annotation_data/sample/MujocoUR5eInsert_annotation.pkl
 ```
 
 The augmented data is stored in `./augmented_data/MujocoUR5eInsert_<data_suffix>`. Rename this directory to `./augmented_data/sample/MujocoUR5eInsert`.
