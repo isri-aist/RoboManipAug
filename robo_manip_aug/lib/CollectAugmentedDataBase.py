@@ -158,7 +158,7 @@ class CollectAugmentedDataBase(TeleopBase):
         os.makedirs(os.path.dirname(symlink_filename), exist_ok=True)
         os.symlink(path.abspath(self.args.base_demo_path), symlink_filename)
         print(
-            f"[CollectAugmentedDataBase] Create a symbolic link to the base demo file: {symlink_filename}"
+            f"[{self.op.__class__.__name__}] Create a symbolic link to the base demo file: {symlink_filename}"
         )
 
         self.reset_flag = True
@@ -234,13 +234,13 @@ class CollectAugmentedDataBase(TeleopBase):
 
         # Load base demo data
         print(
-            f"[CollectAugmentedDataBase] Load teleoperation data: {self.args.base_demo_path}"
+            f"[{self.op.__class__.__name__}] Load teleoperation data: {self.args.base_demo_path}"
         )
         self.base_data_manager.load_data(self.args.base_demo_path)
 
         # Load annotation data
         print(
-            f"[CollectAugmentedDataBase] Load annotation data: {self.args.annotation_path}"
+            f"[{self.op.__class__.__name__}] Load annotation data: {self.args.annotation_path}"
         )
         with open(self.args.annotation_path, "rb") as f:
             self.annotation_data = pickle.load(f)
@@ -252,13 +252,10 @@ class CollectAugmentedDataBase(TeleopBase):
         self.obs, info = self.env.reset()
 
         print(
-            "[CollectAugmentedDataBase] demo_name: {}, world_idx: {}".format(
-                self.demo_name,
-                self.data_manager.world_idx,
-            )
+            f"[{self.op.__class__.__name__}] demo_name: {self.demo_name}, world_idx: {self.data_manager.world_idx}"
         )
         print(
-            "[CollectAugmentedDataBase] Press the 'n' key to start automatic grasping."
+            f"[{self.op.__class__.__name__}] Press the 'n' key to start automatic grasping."
         )
 
     def collect_data(self):
@@ -272,7 +269,7 @@ class CollectAugmentedDataBase(TeleopBase):
             list(self.annotation_data["acceptable_region_list"]) + [None]
         ):
             # Move along base demo motion
-            print("[CollectAugmentedDataBase] Move along the base demo motion.")
+            print(f"[{self.op.__class__.__name__}] Move along the base demo motion.")
             self.follow_demo_info = {}
             if self.acceptable_region_idx == 0:
                 self.follow_demo_info["start_time_idx"] = 0
@@ -306,7 +303,7 @@ class CollectAugmentedDataBase(TeleopBase):
 
             # Sample end-effector position
             print(
-                "[CollectAugmentedDataBase] Collect data from acceptable region: "
+                f"[{self.op.__class__.__name__}] Collect data from acceptable region: "
                 f"{self.acceptable_region_idx+1} / {len(self.annotation_data['acceptable_region_list'])}"
             )
             center_se3 = get_se3_from_pose(acceptable_region["center"]["eef_pose"])
@@ -414,7 +411,7 @@ class CollectAugmentedDataBase(TeleopBase):
             reach_duration = 0.3  # [s]
             if self.phase_manager.get_phase_elapsed_duration() > reach_duration:
                 print(
-                    "[CollectAugmentedDataBase] Press the 'n' key to start data collection."
+                    f"[{self.op.__class__.__name__}] Press the 'n' key to start data collection."
                 )
                 self.phase_manager.check_transition()
         elif self.phase_manager.is_phase("GraspPhase"):
@@ -425,13 +422,19 @@ class CollectAugmentedDataBase(TeleopBase):
                 self.thread = threading.Thread(target=self.collect_data)
                 self.thread.start()
                 self.thread.join(0.1)
-                print("[CollectAugmentedDataBase] Start a thread for data collection.")
+                print(
+                    f"[{self.op.__class__.__name__}] Start a thread for data collection."
+                )
                 self.phase_manager.check_transition()
         elif self.phase_manager.is_phase("TeleopPhase"):
             self.teleop_time_idx += 1
             if not self.thread.is_alive():
-                print("[CollectAugmentedDataBase] Finish a thread for data collection.")
-                print("[CollectAugmentedDataBase] Press the 'n' key to quit teleop.")
+                print(
+                    f"[{self.op.__class__.__name__}] Finish a thread for data collection."
+                )
+                print(
+                    f"[{self.op.__class__.__name__}] Press the 'n' key to quit teleop."
+                )
                 self.phase_manager.check_transition()
         elif self.phase_manager.is_phase("EndCollectAugmentedDataPhase"):
             if self.args.auto_mode:
