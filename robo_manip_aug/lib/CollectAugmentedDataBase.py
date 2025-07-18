@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 import pinocchio as pin
 from robo_manip_baselines.common import (
-    ArmConfig,
+    ArmManager,
     DataKey,
     DataManager,
     PhaseBase,
@@ -57,7 +57,6 @@ class CollectAugmentedDataBase(TeleopBase):
     def __init__(self):
         super().__init__()
 
-        self.data_manager.meta_data["format"] = "RoboManipBaselines-AugmentedData"
         self.phase_manager.phase_order[-1] = EndCollectAugmentedDataPhase(op=self)
 
         # Setup data manager for base data
@@ -66,6 +65,14 @@ class CollectAugmentedDataBase(TeleopBase):
 
         # Setup motion interpolator
         self.motion_interpolator = MotionInterpolator(self.env, self.motion_manager)
+
+        if not (
+            len(self.motion_manager.body_manager_list) == 1
+            and isinstance(self.motion_manager.body_manager_list[0], ArmManager)
+        ):
+            raise RuntimeError(
+                f"[{self.__class__.__name__}] This program assumes that the body managers consist of only a single ArmManager."
+            )
 
     def setup_args(self, parser=None):
         if parser is None:
@@ -143,10 +150,10 @@ class CollectAugmentedDataBase(TeleopBase):
             raise ValueError("replay_log must not be specified.")
 
     def run(self):
-        base_demo_format = os.path.splitext(self.args.base_demo_path.rstrip("/"))[-1]
         # Create a symbolic link to the base demo file
+        base_demo_ext = os.path.splitext(self.args.base_demo_path.rstrip("/"))[-1]
         symlink_filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/base_demo{}".format(
-            self.demo_name, self.datetime_now, base_demo_format
+            self.demo_name, self.datetime_now, base_demo_ext
         )
         os.makedirs(os.path.dirname(symlink_filename), exist_ok=True)
         os.symlink(path.abspath(self.args.base_demo_path), symlink_filename)
@@ -183,7 +190,7 @@ class CollectAugmentedDataBase(TeleopBase):
                 self.phase_manager.is_phase("TeleopPhase")
                 and self.executing_augmented_motion
             ):
-                self.record_data()  # noqa: F821
+                self.record_data()
 
             # Step environment
             self.obs, self.reward, _, _, self.info = self.env.step(action)
@@ -317,10 +324,10 @@ class CollectAugmentedDataBase(TeleopBase):
                 # Move to convergence point
                 joint_pos = acceptable_region[convergence_key]["joint_pos"]
                 vel_limit = np.full_like(joint_pos, np.deg2rad(20.0))  # [rad/s]
-                for body_config in self.env.unwrapped.body_config_list:
-                    if isinstance(body_config, ArmConfig):
-                        gripper_joint_idxes = body_config.gripper_joint_idxes
-                        break
+
+                gripper_joint_idxes = self.motion_manager.body_manager_list[
+                    0
+                ].body_config.gripper_joint_idxes
                 vel_limit[gripper_joint_idxes] = 100.0
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.JOINT,
@@ -344,7 +351,7 @@ class CollectAugmentedDataBase(TeleopBase):
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.EEF,
                     eef_se3,
-                    duration=self.args.interp_duration,  # [s]
+                    duration=self.args.interp_duration,
                 )
                 self.aug_end_time_idx = acceptable_region[convergence_key]["time_idx"]
                 self.executing_augmented_motion = True
