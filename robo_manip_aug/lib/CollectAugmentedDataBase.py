@@ -130,7 +130,7 @@ class CollectAugmentedDataBase(TeleopBase):
 
         if self.args.replay_log is not None:
             raise NotImplementedError(
-                f'[{self.__class__.__name__}] The "replay_log" option is not supported.'
+                f"[{self.__class__.__name__}] The 'replay_log' option is not supported."
             )
 
         self.auto_mode = self.args.auto_mode
