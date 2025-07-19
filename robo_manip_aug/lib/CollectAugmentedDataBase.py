@@ -14,6 +14,7 @@ from robo_manip_baselines.common import (
     PhaseBase,
     PhaseManager,
     get_se3_from_pose,
+    remove_suffix,
 )
 from robo_manip_baselines.teleop import TeleopBase
 
@@ -202,6 +203,25 @@ class CollectAugmentedDataBase(TeleopBase):
             EndCollectPhase(self),
         ]
         self.phase_manager = PhaseManager(phase_order)
+
+        def get_text_func(phase):
+            text = remove_suffix(phase.name, "Phase")
+            if self.reward >= 1.0:
+                text += " (success)"
+            return text
+
+        def get_color_func(phase):
+            if phase.name in ("InitialCollectPhase"):
+                return np.array([200, 200, 255])
+            elif phase.name in ("CollectPhase"):
+                return np.array([255, 200, 200])
+            elif phase.name in ("EndCollectPhase"):
+                return np.array([200, 200, 200])
+            else:
+                return np.array([200, 255, 200])
+
+        self.phase_manager.get_text_func = get_text_func
+        self.phase_manager.get_color_func = get_color_func
 
     def run(self):
         # Create a symbolic link to the base demo file
