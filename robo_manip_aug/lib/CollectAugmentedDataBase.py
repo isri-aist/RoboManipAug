@@ -391,11 +391,11 @@ class CollectAugmentedDataBase(TeleopBase):
                     break
 
                 # Move to sampled point
-                sample_rot = center_se3.rotation @ sample_random_rotation(
-                    self.args.rotation_random_scale * radius
-                    if self.args.rotation_random_angle is None
-                    else np.deg2rad(self.args.rotation_random_angle)
-                )
+                if self.args.rotation_random_angle is None:
+                    max_angle = self.args.rotation_random_scale * radius
+                else:
+                    max_angle = np.deg2rad(self.args.rotation_random_angle)
+                sample_rot = center_se3.rotation @ sample_random_rotation(max_angle)
                 eef_se3 = pin.SE3(sample_rot, sample_pos) * eef_offset_se3.inverse()
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.EEF,
