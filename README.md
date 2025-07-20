@@ -11,6 +11,13 @@ $ cd RoboManipAug
 $ pip install -e .
 ```
 
+> [!NOTE]
+> Clone both `RoboManipBaselines` and `RoboManipAug` under the same directory, e.g.:
+> ```console
+> $ ls <workspace_dir>
+> RoboManipBaselines  RoboManipAug
+> ```
+
 ## Examples
 ### Data
 #### Collect single data by teleoperation:
