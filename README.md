@@ -109,6 +109,8 @@ $ cd robo_manip_baselines
 $ python ./bin/Rollout.py Mlp MujocoUR5eInsert --checkpoint ./checkpoint/sample/MujocoUR5eInsert/policy_last.ckpt --world_idx 2 --world_random_scale 0.05 0.05 0.0
 ```
 
+By using the option `--world_idx_list 2 2 2 2` instead of `--world_idx 2`, the rollout will be repeated four times.
+
 ### [Deprecated] Environment
 #### Extract images for learning 3D gaussian splatting from teleoperation data:
 ```console
