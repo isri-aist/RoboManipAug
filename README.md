@@ -19,7 +19,7 @@ $ pip install -e .
 > ```
 
 ## Examples
-### Data
+### Manual data collection
 #### Collect single data by teleoperation:
 ```console
 # Go to the top directory of RoboManipBaselines
@@ -58,6 +58,7 @@ When the `--load_annotation` option is specified, the already saved acceptable r
 
 <img width="1960" height="1190" alt="RoboManipAug-AnnotateAcceptableRegion" src="https://github.com/user-attachments/assets/0d2d3d0f-6941-453b-9c4b-808121f48e04" />
 
+### Automatic data augmentation
 #### Collect augmented data within the acceptable regions in the simulation:
 ```console
 # Go to the top directory of RoboManipAug
@@ -78,7 +79,7 @@ $ python ./bin/VisualizeData3D.py ./augmented_data/sample/MujocoUR5eInsert/ --ba
 
 <img width="1960" height="1190" alt="RoboManipAug-VisualizeData3D" src="https://github.com/user-attachments/assets/15287a53-6698-49df-929e-1c67d0c70ff5" />
 
-#### [Optional] Plot base data and augmented data
+#### [Optional] Plot base data and augmented data:
 ```console
 # Go to the top directory of RoboManipAug
 $ cd robo_manip_aug
