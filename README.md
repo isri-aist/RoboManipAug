@@ -27,6 +27,8 @@ $ cd robo_manip_baselines
 $ python bin/Teleop.py MujocoUR5eInsert --world_idx_list 2
 ```
 
+https://github.com/user-attachments/assets/789415ee-1b59-48f8-bf3a-fbe5a710edea
+
 Move the saved RMB file to `robo_manip_aug/teleop_data/sample/MujocoUR5eInsert_base_demo.rmb`.  
 (The `sample` directory in the following can be an arbitrary name.)
 
@@ -36,6 +38,8 @@ Move the saved RMB file to `robo_manip_aug/teleop_data/sample/MujocoUR5eInsert_b
 $ cd robo_manip_aug
 $ python ./bin/GenerateMergedPointCloud.py ./teleop_data/sample/MujocoUR5eInsert_base_demo.rmb ./env_data/sample/MujocoUR5eInsert.pcd
 ```
+
+<img width="1960" height="1190" alt="RoboManipAug-GenerateMergedPointCloud" src="https://github.com/user-attachments/assets/8b50f7f2-f1cf-47f1-b2aa-4ef0bfecb0f4" />
 
 #### [Optional] Visualize environment point cloud with a 3D viewer:
 ```console
@@ -50,6 +54,9 @@ $ python ./bin/VisualizePointCloud.py ./env_data/sample/MujocoUR5eInsert.pcd
 $ cd robo_manip_aug
 $ python ./bin/AnnotateAcceptableRegion.py ./teleop_data/sample/MujocoUR5eInsert_base_demo.rmb ./annotation_data/sample/MujocoUR5eInsert_annotation.pkl --point_cloud_path ./env_data/sample/MujocoUR5eInsert.pcd
 ```
+When the `--load_annotation` option is specified, the already saved acceptable regions will be visualized.
+
+<img width="1960" height="1190" alt="RoboManipAug-AnnotateAcceptableRegion" src="https://github.com/user-attachments/assets/0d2d3d0f-6941-453b-9c4b-808121f48e04" />
 
 #### Collect augmented data within the acceptable regions in the simulation:
 ```console
@@ -57,6 +64,8 @@ $ python ./bin/AnnotateAcceptableRegion.py ./teleop_data/sample/MujocoUR5eInsert
 $ cd robo_manip_aug
 $ python ./bin/CollectAugmentedData.py MujocoUR5eInsert ./teleop_data/sample/MujocoUR5eInsert_base_demo.rmb ./annotation_data/sample/MujocoUR5eInsert_annotation.pkl
 ```
+
+https://github.com/user-attachments/assets/b1580334-83b7-4009-80a6-ed5e74c9ef3b
 
 The augmented data is stored in `./augmented_data/MujocoUR5eInsert_<data_suffix>`. Rename this directory to `./augmented_data/sample/MujocoUR5eInsert`.
 
@@ -66,6 +75,8 @@ The augmented data is stored in `./augmented_data/MujocoUR5eInsert_<data_suffix>
 $ cd robo_manip_aug
 $ python ./bin/VisualizeData3D.py ./augmented_data/sample/MujocoUR5eInsert/ --base_demo_path ./teleop_data/sample/MujocoUR5eInsert_base_demo.rmb --point_cloud_path ./env_data/sample/MujocoUR5eInsert.pcd
 ```
+
+<img width="1960" height="1190" alt="RoboManipAug-VisualizeData3D" src="https://github.com/user-attachments/assets/15287a53-6698-49df-929e-1c67d0c70ff5" />
 
 #### [Optional] Replay the augmented data:
 ```console
