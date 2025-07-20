@@ -78,6 +78,15 @@ $ python ./bin/VisualizeData3D.py ./augmented_data/sample/MujocoUR5eInsert/ --ba
 
 <img width="1960" height="1190" alt="RoboManipAug-VisualizeData3D" src="https://github.com/user-attachments/assets/15287a53-6698-49df-929e-1c67d0c70ff5" />
 
+[Optional] Plot base data and augmented data
+```console
+# Go to the top directory of RoboManipAug
+$ cd robo_manip_aug
+$ python ./misc/PlotAugmentedData.py ./augmented_data/sample/MujocoUR5eInsert/base_demo.rmb ./augmented_data/sample/MujocoUR5eInsert/region000/MujocoUR5eInsert_augmented_region000_00.rmb
+```
+
+You can plot the end-effector pose by specifying the `--data_key eef_pose` option (by default, `joint_pos` is plotted).
+
 #### [Optional] Replay the augmented data:
 ```console
 # Go to the top directory of RoboManipBaselines
