@@ -387,39 +387,31 @@ class CollectAugmentedDataBase(TeleopBase):
                 center_se3.translation, radius, self.args.num_sphere_sample
             )
 
-            for self.sample_idx, sample_pos in enumerate(
-                list(sample_pos_list) + [None]
-            ):
-                # Move to convergence point
-                joint_pos = acceptable_region[convergence_key]["joint_pos"]
-                vel_limit = np.full_like(joint_pos, np.deg2rad(20.0))  # [rad/s]
-
-                gripper_joint_idxes = self.motion_manager.body_manager_list[
-                    0
-                ].body_config.gripper_joint_idxes
-                vel_limit[gripper_joint_idxes] = 100.0
-                self.motion_interpolator.set_target(
-                    MotionInterpolator.TargetSpace.JOINT,
-                    joint_pos,
-                    vel_limit=vel_limit,
-                )
-                self.motion_interpolator.wait()
-                self.wait_until_motion_stop()
-                time.sleep(0.5)  # [s]
-
-                if self.sample_idx == len(sample_pos_list):
-                    break
-
+            for self.sample_idx, sample_pos in enumerate(sample_pos_list):
                 # Move to sampled point
                 if self.args.rotation_random_angle is None:
                     max_angle = self.args.rotation_random_scale * radius
                 else:
                     max_angle = np.deg2rad(self.args.rotation_random_angle)
                 sample_rot = center_se3.rotation @ sample_random_rotation(max_angle)
-                eef_se3 = pin.SE3(sample_rot, sample_pos) * eef_offset_se3.inverse()
+                sample_se3 = pin.SE3(sample_rot, sample_pos) * eef_offset_se3.inverse()
                 self.motion_interpolator.set_target(
                     MotionInterpolator.TargetSpace.EEF,
-                    eef_se3,
+                    sample_se3,
+                    duration=self.args.interp_duration,
+                )
+                self.motion_interpolator.wait()
+                self.wait_until_motion_stop()
+                time.sleep(0.5)  # [s]
+
+                # Move to convergence point
+                convergence_se3 = (
+                    get_se3_from_pose(acceptable_region[convergence_key]["eef_pose"])
+                    * eef_offset_se3.inverse()
+                )
+                self.motion_interpolator.set_target(
+                    MotionInterpolator.TargetSpace.EEF,
+                    convergence_se3,
                     duration=self.args.interp_duration,
                 )
                 self.aug_end_time_idx = acceptable_region[convergence_key]["time_idx"]
@@ -445,9 +437,6 @@ class CollectAugmentedDataBase(TeleopBase):
             time.sleep(self.env.unwrapped.dt)
 
     def save_data(self):
-        # Reverse motion data
-        self.data_manager.reverse_data()
-
         # Merge base demo motion
         if not self.args.without_merge_base_demo:
             for key in self.data_manager.all_data_seq.keys():
