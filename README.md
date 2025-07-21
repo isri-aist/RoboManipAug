@@ -86,7 +86,7 @@ $ cd robo_manip_aug
 $ python ./misc/PlotAugmentedData.py ./augmented_data/sample/MujocoUR5eInsert/base_demo.rmb ./augmented_data/sample/MujocoUR5eInsert/region000/MujocoUR5eInsert_augmented_region000_00.rmb
 ```
 
-<img width="1642" height="1032" alt="RoboManipAug-PlotAugmentedData" src="https://github.com/user-attachments/assets/01377604-d711-49cc-ab77-fe192c5bcbbb" />
+<img width="1380" height="871" alt="RoboManipAug-PlotAugmentedData" src="https://github.com/user-attachments/assets/107d5caa-7758-41cd-8ecc-96f559265093" />
 
 You can plot the end-effector pose by specifying the `--data_key eef_pose` option (by default, `joint_pos` is plotted).
 
