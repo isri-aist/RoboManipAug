@@ -86,10 +86,18 @@ class MotionInterpolator(object):
         if self.target_state is None or self.duration is None:
             return
 
+        def cubic_interp(t):
+            return 3 * t**2 - 2 * t**3
+
+        def min_jerk_interp(t):
+            return 10 * t**3 - 15 * t**4 + 6 * t**5
+
         current_time = self.env.unwrapped.get_time()
         current_ratio = np.clip(
             (current_time - self.start_time) / self.duration, 0.0, 1.0
         )
+        current_ratio = min_jerk_interp(current_ratio)
+
         if self.target_space == self.TargetSpace.JOINT:
             delta_state = current_ratio * (self.target_state - self.start_state)
             self.motion_manager.set_command_data(
