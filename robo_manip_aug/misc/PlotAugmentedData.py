@@ -43,10 +43,10 @@ class PlotAugmentedData(object):
         aug_time_shifted = aug_time + time_shift
 
         colors = {
-            (measured_data_key, "base"): "mediumseagreen",
-            (measured_data_key, "aug"): "forestgreen",
-            (command_data_key, "base"): "lightskyblue",
-            (command_data_key, "aug"): "royalblue",
+            (measured_data_key, "base"): "lightcoral",
+            (measured_data_key, "aug"): "firebrick",
+            (command_data_key, "base"): "mediumseagreen",
+            (command_data_key, "aug"): "forestgreen",
         }
         linestyles = {
             measured_data_key: "-",
