@@ -211,11 +211,11 @@ class CollectAugmentedDataBase(TeleopBase):
             return text
 
         def get_color_func(phase):
-            if phase.name in ("InitialCollectPhase"):
+            if phase.name == "InitialCollectPhase":
                 return np.array([200, 200, 255])
-            elif phase.name in ("CollectPhase"):
+            elif phase.name == "CollectPhase":
                 return np.array([255, 200, 200])
-            elif phase.name in ("EndCollectPhase"):
+            elif phase.name == "EndCollectPhase":
                 return np.array([200, 200, 200])
             else:
                 return np.array([200, 255, 200])
