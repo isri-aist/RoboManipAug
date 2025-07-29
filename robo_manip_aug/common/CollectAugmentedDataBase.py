@@ -160,6 +160,11 @@ class CollectAugmentedDataBase(TeleopBase):
             help="Number of samples from each sphere of acceptable region",
         )
         parser.add_argument(
+            "--position_fix",
+            action="store_true",
+            help="Whether to fix the position in the augmented trajectory (and vary only the rotation)",
+        )
+        parser.add_argument(
             "--rotation_random_scale",
             type=float,
             default=2.0,
@@ -411,6 +416,8 @@ class CollectAugmentedDataBase(TeleopBase):
                     break
 
                 # Move to sampled point
+                if self.args.position_fix:
+                    sample_pos = acceptable_region[convergence_key]["eef_pose"][:3]
                 if self.args.rotation_random_angle is None:
                     max_angle = self.args.rotation_random_scale * radius
                 else:
