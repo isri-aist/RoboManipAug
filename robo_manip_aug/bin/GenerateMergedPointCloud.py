@@ -49,8 +49,8 @@ class GenerateMergedPointCloud(object):
         # Set of the transformation from end-effector to camera in the MuJoCo model
         # TODO: This part needs to be hardcoded for each robot
         self.trans_from_eef_to_camera = get_trans_from_rot_pos(
-            o3d.geometry.get_rotation_matrix_from_xyz([0.0, 0.0, np.pi]),
-            np.array([0.0, 0.05, 0.0]),
+            o3d.geometry.get_rotation_matrix_from_xyz([0.0, 0.0, 0.0]),
+            np.array([-0.05, -0.08, 0.0]),
         )
 
     def run(self):
