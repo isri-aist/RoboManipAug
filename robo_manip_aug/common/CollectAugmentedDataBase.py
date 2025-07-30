@@ -154,6 +154,11 @@ class CollectAugmentedDataBase(TeleopBase):
             help="Do not merge the base motion after the augmented motion",
         )
         parser.add_argument(
+            "--only_last_sphere",
+            action="store_true",
+            help="Whether to use only last sphere",
+        )
+        parser.add_argument(
             "--num_sphere_sample",
             type=int,
             default=16,
@@ -345,6 +350,13 @@ class CollectAugmentedDataBase(TeleopBase):
         for self.acceptable_region_idx, acceptable_region in enumerate(
             list(self.annotation_data["acceptable_region_list"]) + [None]
         ):
+            if self.args.only_last_sphere:
+                if (
+                    self.acceptable_region_idx
+                    < len(self.annotation_data["acceptable_region_list"]) - 1
+                ):
+                    continue
+
             # Move along base demo motion
             print(f"[{self.__class__.__name__}] Move along the base demo motion.")
             self.follow_demo_info = {}
