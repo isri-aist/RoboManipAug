@@ -95,8 +95,15 @@ class AnnotateAcceptableRegion(object):
         parser.add_argument("--point_cloud_path", type=str, default=None)
         parser.add_argument("--load_annotation", action="store_true")
         parser.add_argument(
-            "--initial_acceptable_width", type=float, default=0.04
-        )  # [m]
+            "--initial_acceptable_width",
+            type=float,
+            default=0.04,  # [m]
+        )
+        parser.add_argument(
+            "--static_annotation",
+            action="store_true",
+            help="whether to annotate spheres with a fixed width at all points.",
+        )
         self.args = parser.parse_args()
 
     def setup_variables(self):
@@ -133,8 +140,9 @@ class AnnotateAcceptableRegion(object):
         self.fig.visualizer.register_key_action_callback(256, self.escape_callback)
         self.fig.visualizer.register_key_action_callback(262, self.right_callback)
         self.fig.visualizer.register_key_action_callback(263, self.left_callback)
-        self.fig.visualizer.register_key_action_callback(264, self.down_callback)
-        self.fig.visualizer.register_key_action_callback(265, self.up_callback)
+        if not self.args.static_annotation:
+            self.fig.visualizer.register_key_action_callback(264, self.down_callback)
+            self.fig.visualizer.register_key_action_callback(265, self.up_callback)
         self.fig.visualizer.register_key_callback(ord("S"), self.s_callback)
         self.fig.visualizer.register_key_callback(ord("V"), self.v_callback)
 
@@ -145,6 +153,10 @@ class AnnotateAcceptableRegion(object):
   - [down-arrow/up-arrow] Increase/decrease the radius of the acceptable region. Press [shift] and [ctrl] together to increase/decrease the increment.
   - [s] Dump acceptable regions to the file.
   - [v] Toggle whether or not to draw previous acceptable regions.""")
+        if self.args.static_annotation:
+            print(
+                "[AnnotateAcceptableRegion] Static annotation is enabled. down-arrow/up-arrow keys are disabled."
+            )
 
         # Load a URDF model of robot
         self.urdf_tm = UrdfTransformManager()
@@ -178,7 +190,10 @@ class AnnotateAcceptableRegion(object):
             self.fig.add_geometry(waypoint_sphere.geometries[0])
 
         # Draw acceptable sphere
-        self.acceptable_width = self.args.initial_acceptable_width
+        if self.args.static_annotation:
+            self.acceptable_width = 0.02  # [m]
+        else:
+            self.acceptable_width = self.args.initial_acceptable_width
         self.acceptable_sphere_lineset = None
         self.update_acceptable_sphere()
 
@@ -296,17 +311,22 @@ class AnnotateAcceptableRegion(object):
             self.current_time_idx, self.acceptable_width, current_center_mat
         )
         if self.current_time_idx < self.data_len - 1:
-            subseq_start_time_idx = self.current_time_idx + 1
-            rel_pos_subseq = (
-                self.eef_traj.H[subseq_start_time_idx:, 0:3, 3] - current_center_pos
-            )
-            satisfied_time_idxes = np.argwhere(
-                np.linalg.norm(rel_pos_subseq, axis=1) > self.acceptable_width
-            )
-            if len(satisfied_time_idxes) == 0:
-                self.next_time_idx = self.data_len - 1
+            if self.args.static_annotation:
+                self.next_time_idx = self.current_time_idx + 1
             else:
-                self.next_time_idx = subseq_start_time_idx + satisfied_time_idxes[0, 0]
+                subseq_start_time_idx = self.current_time_idx + 1
+                rel_pos_subseq = (
+                    self.eef_traj.H[subseq_start_time_idx:, 0:3, 3] - current_center_pos
+                )
+                satisfied_time_idxes = np.argwhere(
+                    np.linalg.norm(rel_pos_subseq, axis=1) > self.acceptable_width
+                )
+                if len(satisfied_time_idxes) == 0:
+                    self.next_time_idx = self.data_len - 1
+                else:
+                    self.next_time_idx = (
+                        subseq_start_time_idx + satisfied_time_idxes[0, 0]
+                    )
         else:
             self.next_time_idx = None
 
