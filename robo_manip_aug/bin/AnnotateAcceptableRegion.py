@@ -94,6 +94,9 @@ class AnnotateAcceptableRegion(object):
         parser.add_argument("annotation_path", type=str)
         parser.add_argument("--point_cloud_path", type=str, default=None)
         parser.add_argument("--load_annotation", action="store_true")
+        parser.add_argument(
+            "--initial_acceptable_width", type=float, default=0.04
+        )  # [m]
         self.args = parser.parse_args()
 
     def setup_variables(self):
@@ -175,7 +178,7 @@ class AnnotateAcceptableRegion(object):
             self.fig.add_geometry(waypoint_sphere.geometries[0])
 
         # Draw acceptable sphere
-        self.acceptable_width = 0.04  # [m]
+        self.acceptable_width = self.args.initial_acceptable_width
         self.acceptable_sphere_lineset = None
         self.update_acceptable_sphere()
 
