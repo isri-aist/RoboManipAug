@@ -137,3 +137,12 @@ $ python ./bin/ExtractImagesFromData.py <path_to_rmb> --out_dir ./env_data/Mujoc
 $ cd robo_manip_aug
 $ python ./bin/VisualizePointCloud.py ./env_data/MujocoUR5eInsert_SuGaR.ply
 ```
+
+### Misc scripts
+#### Add relative gripper joint position data to RMB file
+```console
+# Go to the top directory of RoboManipAug
+$ cd robo_manip_aug
+$ python ./misc/AddGripperRelToRmbData.py <rmb_file>
+```
+`<rmb_file>` can be either the path to an RMB file or the path to a directory containing multiple RMB files.
