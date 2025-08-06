@@ -31,6 +31,7 @@ def plot_accuracies_from_yaml_files(file_paths, output_pdf=None):
     desired_method_order = [
         "Default",
         "FixedRotation",
+        "FixedPosition",
         "WithoutMergeBaseDemo",
         "ReturnCenter",
     ]
@@ -38,12 +39,14 @@ def plot_accuracies_from_yaml_files(file_paths, output_pdf=None):
     method_colors = {
         "Default": "red",
         "FixedRotation": "darkviolet",
+        "FixedPosition": "deeppink",
         "WithoutMergeBaseDemo": "darkorange",
         "ReturnCenter": "sienna",
     }
     method_labels = {
         "Default": "Ours",
         "FixedRotation": "w/o Rotation Augmentation",
+        "FixedPosition": "w/o Position Augmentation",
         "WithoutMergeBaseDemo": "w/o Merge Base Demo",
         "ReturnCenter": "Return Center",
     }
