@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import yaml
 
+success_score_map = {"1": 1, "0": 0, ">": 0.5}
+
 
 def compute_success_stats(data_by_N):
     """
@@ -16,7 +18,8 @@ def compute_success_stats(data_by_N):
     for entry in data_by_N:
         N = entry["N"]
         success_rates = [
-            np.mean([int(c) for c in rollout]) for rollout in entry["Rollouts"]
+            np.mean([success_score_map[c] for c in rollout])
+            for rollout in entry["Rollouts"]
         ]
         Ns.append(N)
         means.append(np.mean(success_rates))
@@ -37,13 +40,17 @@ def main():
 
     # Get statistics for each method
     proposed_N, proposed_mean, proposed_std = compute_success_stats(data["Proposed"])
-    baseline_N, baseline_mean, baseline_std = compute_success_stats(data["Baseline"])
+    if "Baseline" in data.keys():
+        baseline_N, baseline_mean, baseline_std = compute_success_stats(
+            data["Baseline"]
+        )
     if "Human" in data.keys():
         human_N, human_mean, human_std = compute_success_stats(data["Human"])
 
     # Replay (calculate only mean success rate)
     replay_success_rates = [
-        np.mean([int(c) for c in rollout]) for rollout in data["Replay"][0]["Rollouts"]
+        np.mean([success_score_map[c] for c in rollout])
+        for rollout in data["Replay"][0]["Rollouts"]
     ]
     replay_mean = np.mean(replay_success_rates)
 
@@ -61,14 +68,15 @@ def main():
     )
 
     # Baseline (green)
-    plt.plot(baseline_N, baseline_mean, "g-o", label="Baseline")
-    plt.fill_between(
-        baseline_N,
-        baseline_mean - baseline_std,
-        baseline_mean + baseline_std,
-        color="green",
-        alpha=0.2,
-    )
+    if "Baseline" in data.keys():
+        plt.plot(baseline_N, baseline_mean, "g-o", label="Baseline")
+        plt.fill_between(
+            baseline_N,
+            baseline_mean - baseline_std,
+            baseline_mean + baseline_std,
+            color="green",
+            alpha=0.2,
+        )
 
     if "Human" in data.keys():
         plt.plot(human_N, human_mean, "y-o", label="Human")

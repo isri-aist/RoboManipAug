@@ -1,0 +1,12 @@
+Task: Tape Picking
+Proposed:
+  - N: 30
+    Rollouts:
+      - '11>0>>00>1' #32123
+  - N: 50
+    Rollouts:
+      - '100001100>' #32123
+Replay:
+  - N: 0
+    Rollouts:
+      - '1000001000'
