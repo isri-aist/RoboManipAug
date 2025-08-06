@@ -7,4 +7,6 @@ Proposed:
     Rollouts:
       - '100001100>' #32123
 Replay:
-  - '1000001000'
+  - N: 0
+    Rollouts:
+      - '1000001000'
