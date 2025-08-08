@@ -32,6 +32,11 @@ def main():
     parser = argparse.ArgumentParser(description="Plot success rates from YAML file.")
     parser.add_argument("yaml_file", type=str, help="Path to input YAML file")
     parser.add_argument("--output_pdf", type=str, help="Output PDF filename")
+    parser.add_argument(
+        "--gt_is_false",
+        action="store_true",
+        help="Whether calculating > as false instead of partial_success or not",
+    )
     args = parser.parse_args()
 
     # Load YAML
@@ -39,6 +44,8 @@ def main():
         data = yaml.safe_load(f)
 
     # Get statistics for each method
+    if args.gt_is_false:
+        success_score_map[">"] = 0
     proposed_N, proposed_mean, proposed_std = compute_success_stats(data["Proposed"])
     if "Baseline" in data.keys():
         baseline_N, baseline_mean, baseline_std = compute_success_stats(
