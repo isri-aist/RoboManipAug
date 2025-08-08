@@ -33,7 +33,7 @@ def main():
     parser.add_argument("yaml_file", type=str, help="Path to input YAML file")
     parser.add_argument("--output_pdf", type=str, help="Output PDF filename")
     parser.add_argument(
-        "--gt_is_false",
+        "--ignore_partial_success",
         action="store_true",
         help="Whether calculating > as false instead of partial_success or not",
     )
@@ -44,7 +44,7 @@ def main():
         data = yaml.safe_load(f)
 
     # Get statistics for each method
-    if args.gt_is_false:
+    if args.ignore_partial_success:
         success_score_map[">"] = 0
     proposed_N, proposed_mean, proposed_std = compute_success_stats(data["Proposed"])
     if "Baseline" in data.keys():
