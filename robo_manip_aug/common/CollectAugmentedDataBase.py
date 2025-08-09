@@ -469,7 +469,10 @@ class CollectAugmentedDataBase(TeleopBase):
 
         # Merge base demo motion
         if not self.args.without_merge_base_demo:
-            for key in self.data_manager.all_data_seq.keys():
+            for key in list(self.data_manager.all_data_seq.keys()):
+                if key not in self.base_data_manager.all_data_seq:
+                    del self.data_manager.all_data_seq[key]
+                    continue
                 self.data_manager.all_data_seq[key] += list(
                     self.base_data_manager.all_data_seq[key][
                         self.aug_end_time_idx + 1 :
@@ -481,15 +484,18 @@ class CollectAugmentedDataBase(TeleopBase):
             )
 
         # Dump to file
-        filename = "augmented_data/{}_{:%Y%m%d_%H%M%S}/region{:0>3}/{}_augmented_region{:0>3}_{:0>2}.rmb".format(
-            self.demo_name,
-            self.datetime_now,
-            self.acceptable_region_idx,
-            self.demo_name,
-            self.acceptable_region_idx,
-            self.sample_idx,
+        filename = os.path.normpath(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "augmented_data",
+                f"{self.demo_name}_{self.datetime_now:%Y%m%d_%H%M%S}",
+                f"region{self.acceptable_region_idx:0>3}",
+                f"{self.demo_name}_augmented_region{self.acceptable_region_idx:0>3}_{self.sample_idx:0>2}.rmb",
+            )
         )
-        super().save_data(filename)
+        self.data_manager.save_data(filename)
+        print(f"[{self.__class__.__name__}] Save the data as {filename}")
 
         # Clear motion data
         self.data_manager.reset()
