@@ -102,7 +102,7 @@ def main():
     plt.xlabel("Policy")
     plt.ylabel("Success Rate")
     plt.title("Evaluation of Data Augmentation Methods" + task_name)
-    plt.grid(True)
+    plt.grid(False)
     plt.tight_layout()
 
     # Use TrueType fonts (avoid Type 3 fonts)
