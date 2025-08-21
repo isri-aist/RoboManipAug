@@ -1,0 +1,48 @@
+Methods:
+  - Proposed
+    - [P1] Teleop once (manual)
+      - H1 / num_of_demos
+    - [P2] Precision annotation (manual)
+      - 3回の平均
+    - [P3] Augmentation (automatic)
+      - 100 trajectories for simulation, 30 trajectories for real world
+  - Human
+    - [H1] Teleop (manual)
+      - 100 trajectories for simulation, 30 trajectories for real world
+
+Time:
+  - peg-in-hole (simulation):
+    - P1: 0.3 min
+    - P2: 0.4 min (average of 25s, 23s, 26s)
+    - P3: 15 min
+    - H1: 27 min
+  - door opening (simulation):
+    - P1: 0.3 min
+    - P2: 0.5 min (average of 28s, 30s, 27s)
+    - P3: 20 min
+    - H1: 29 min
+  - lid opening (simulation):
+    - P1: 0.3 min
+    - P2: 0.5 min (average of 36s, 29s, 26s)
+    - P3: 16 min
+    - H1: 31 min
+  - toolbox picking (simulation):
+    - P1: 0.3 min
+    - P2: 0.5 min (average of 28s, 31s, 23s)
+    - P3: 17 min
+    - H1: 35 min
+  - lid closing (real world):
+    - P1: 0.5 min
+    - P2: 0.5 min (average of 34s, 20s, 29s)
+    - P3: 5 min
+    - H1: 14 min
+  - bottle placing (real world):
+    - P1: 0.3 min
+    - P2: 0.5 min (average of 29s, 28s, 34s)
+    - P3: 4 min
+    - H1: 9 min
+  # - take picking (real world):
+  #   - P1: 0.3 min
+  #   - P2: 0.5 min?
+  #   - P3: 4 min
+  #   - H1: 10 min
