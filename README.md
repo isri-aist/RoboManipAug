@@ -139,6 +139,13 @@ $ python ./bin/VisualizePointCloud.py ./env_data/MujocoUR5eInsert_SuGaR.ply
 ```
 
 ### Misc scripts
+#### Visualize rollout trajectories
+```console
+# Go to the top directory of RoboManipAug
+$ cd robo_manip_aug
+$ python ./misc/VisualizeRollout.py --proposed_path <path_to_RMB> --baseline_path <path_to_RMB> --human_path <path_to_RMB> --replay_path <path_to_RMB> --point_cloud_path <path_to_pcd>
+```
+
 #### Add relative gripper joint position data to RMB file
 ```console
 # Go to the top directory of RoboManipAug
