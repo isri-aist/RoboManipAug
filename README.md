@@ -20,7 +20,7 @@ $ pip install -e .
 
 ## Examples
 ### Manual data collection
-#### Collect single data by teleoperation:
+#### Collect single data by teleoperation
 ```console
 # Go to the top directory of RoboManipBaselines
 $ cd robo_manip_baselines
@@ -32,7 +32,7 @@ https://github.com/user-attachments/assets/789415ee-1b59-48f8-bf3a-fbe5a710edea
 Move the saved RMB file to `robo_manip_aug/teleop_data/sample/MujocoUR5eInsert_base_demo.rmb`.  
 (The `sample` directory in the following can be an arbitrary name.)
 
-#### Generate environment point cloud from the hand camera RGBD images in the teleoperation data:
+#### Generate environment point cloud from the hand camera RGBD images in the teleoperation data
 ```console
 # Go to the top directory of RoboManipAug
 $ cd robo_manip_aug
@@ -41,14 +41,14 @@ $ python ./bin/GenerateMergedPointCloud.py ./teleop_data/sample/MujocoUR5eInsert
 
 <img width="1960" height="1190" alt="RoboManipAug-GenerateMergedPointCloud" src="https://github.com/user-attachments/assets/8b50f7f2-f1cf-47f1-b2aa-4ef0bfecb0f4" />
 
-#### [Optional] Visualize environment point cloud with a 3D viewer:
+#### [Optional] Visualize environment point cloud with a 3D viewer
 ```console
 # Go to the top directory of RoboManipAug
 $ cd robo_manip_aug
 $ python ./bin/VisualizePointCloud.py ./env_data/sample/MujocoUR5eInsert.pcd
 ```
 
-#### Annotate acceptable regions of end-effectors in data augmentation:
+#### Annotate acceptable regions of end-effectors in data augmentation
 ```console
 # Go to the top directory of RoboManipAug
 $ cd robo_manip_aug
@@ -59,7 +59,7 @@ When the `--load_annotation` option is specified, the already saved acceptable r
 <img width="1960" height="1190" alt="RoboManipAug-AnnotateAcceptableRegion" src="https://github.com/user-attachments/assets/0d2d3d0f-6941-453b-9c4b-808121f48e04" />
 
 ### Automatic data augmentation
-#### Collect augmented data within the acceptable regions in the simulation:
+#### Collect augmented data within the acceptable regions in the simulation
 ```console
 # Go to the top directory of RoboManipAug
 $ cd robo_manip_aug
@@ -70,7 +70,7 @@ https://github.com/user-attachments/assets/b1580334-83b7-4009-80a6-ed5e74c9ef3b
 
 The augmented data is stored in `./augmented_data/MujocoUR5eInsert_<data_suffix>`. Rename this directory to `./augmented_data/sample/MujocoUR5eInsert`.
 
-#### [Optional] Visualize the trajectories of the collected data with a 3D viewer:
+#### [Optional] Visualize the trajectories of the collected data with a 3D viewer
 ```console
 # Go to the top directory of RoboManipAug
 $ cd robo_manip_aug
@@ -79,7 +79,7 @@ $ python ./bin/VisualizeData3D.py ./augmented_data/sample/MujocoUR5eInsert/ --ba
 
 <img width="1960" height="1190" alt="RoboManipAug-VisualizeData3D" src="https://github.com/user-attachments/assets/15287a53-6698-49df-929e-1c67d0c70ff5" />
 
-#### [Optional] Plot base data and augmented data:
+#### [Optional] Plot base data and augmented data
 ```console
 # Go to the top directory of RoboManipAug
 $ cd robo_manip_aug
@@ -90,7 +90,7 @@ $ python ./misc/PlotAugmentedData.py ./augmented_data/sample/MujocoUR5eInsert/ba
 
 You can plot the end-effector pose by specifying the `--data_key eef_pose` option (by default, `joint_pos` is plotted).
 
-#### [Optional] Replay the augmented data:
+#### [Optional] Replay the augmented data
 ```console
 # Go to the top directory of RoboManipBaselines
 $ cd robo_manip_baselines
@@ -98,7 +98,7 @@ $ python ./bin/Teleop.py MujocoUR5eInsert --replay_log ../../RoboManipAug/robo_m
 ```
 
 ### Policy
-#### Compose learning data:
+#### Compose learning data
 ```console
 # Go to the top directory of RoboManipAug
 $ cd robo_manip_aug
@@ -107,14 +107,14 @@ $ python ./bin/ComposeDataset.py ./augmented_data/sample/MujocoUR5eInsert ./lear
 
 By adding the `--num_data_per_region <N>` option, you can specify the number of data per region to be N (by default, all data is used).
 
-#### Train policy:
+#### Train policy
 ```console
 # Go to the top directory of RoboManipBaselines
 $ cd robo_manip_baselines
 $ python ./bin/Train.py Mlp --dataset_dir ../../RoboManipAug/robo_manip_aug/learning_data/sample/MujocoUR5eInsert/ --checkpoint_dir ./checkpoint/sample/MujocoUR5eInsert/ --state_keys --action_keys command_eef_pose_rel --camera_names hand --train_ratio 1.0 --val_ratio 0.2
 ```
 
-#### Rollout policy:
+#### Rollout policy
 ```console
 # Go to the top directory of RoboManipBaselines
 $ cd robo_manip_baselines
@@ -124,14 +124,14 @@ $ python ./bin/Rollout.py Mlp MujocoUR5eInsert --checkpoint ./checkpoint/sample/
 By using the option `--world_idx_list 2 2 2 2` instead of `--world_idx 2`, the rollout will be repeated four times.
 
 ### [Deprecated] Environment
-#### Extract images for learning 3D gaussian splatting from teleoperation data:
+#### Extract images for learning 3D gaussian splatting from teleoperation data
 ```console
 # Go to the top directory of RoboManipAug
 $ cd robo_manip_aug
 $ python ./bin/ExtractImagesFromData.py <path_to_rmb> --out_dir ./env_data/MujocoUR5eInsert
 ```
 
-#### Visualize environment point cloud with a 3D viewer:
+#### Visualize environment point cloud with a 3D viewer
 ```console
 # Go to the top directory of RoboManipAug
 $ cd robo_manip_aug
