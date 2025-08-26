@@ -139,6 +139,13 @@ $ python ./bin/VisualizePointCloud.py ./env_data/MujocoUR5eInsert_SuGaR.ply
 ```
 
 ### Misc scripts
+#### Visualize training trajectories
+```console
+# Go to the top directory of RoboManipAug
+$ cd robo_manip_aug
+$ python ./misc/VisualizeTrainingData.py <dir_to_RMBs> --base_demo_path <path_to_RMB> --point_cloud_path <path_to_pcd>
+```
+
 #### Visualize rollout trajectories
 ```console
 # Go to the top directory of RoboManipAug
