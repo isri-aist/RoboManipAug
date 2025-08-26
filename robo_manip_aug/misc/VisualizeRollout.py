@@ -11,7 +11,6 @@ from robo_manip_baselines.common import (
     RmbData,
     get_rot_pos_from_pose,
 )
-from tqdm import tqdm
 
 
 class VisualizeRollout(object):
@@ -33,6 +32,7 @@ class VisualizeRollout(object):
         parser.add_argument("--human_path", type=str)
         parser.add_argument("--replay_path", type=str)
         parser.add_argument("--point_cloud_path", type=str, default=None)
+        parser.add_argument("--plot_measured", action="store_true")
         self.args = parser.parse_args()
 
     def setup_variables(self):
@@ -41,9 +41,6 @@ class VisualizeRollout(object):
         self.eef_offset_mat = pytrans3d.transformations.transform_from(
             eef_offset_rot, eef_offset_pos
         )
-
-        self.time_idx = 0
-        self.data_idx = 0
 
     def setup_data(self):
         method_info = {
@@ -54,11 +51,15 @@ class VisualizeRollout(object):
         }
         self.all_traj = {}
         self.joint_pos = None
+        if self.args.plot_measured:
+            eef_pose_key = DataKey.MEASURED_EEF_POSE
+        else:
+            eef_pose_key = DataKey.COMMAND_EEF_POSE
         for method_name, rmb_path in method_info.items():
             if rmb_path is None:
                 continue
             with RmbData(rmb_path) as rmb_data:
-                self.all_traj[method_name] = rmb_data[DataKey.COMMAND_EEF_POSE][:]
+                self.all_traj[method_name] = rmb_data[eef_pose_key][:]
                 if self.joint_pos is None:
                     self.joint_pos = rmb_data[DataKey.COMMAND_JOINT_POS][0]
 
@@ -77,9 +78,7 @@ class VisualizeRollout(object):
         self.set_joint_pos()
 
         # Draw EEF trajectory
-        for method_name, eef_pose_seq in tqdm(
-            self.all_traj.items(), desc="[VisualizeRollout] Draw trajectories"
-        ):
+        for method_name, eef_pose_seq in self.all_traj.items():
             seq_len = len(eef_pose_seq)
             eef_traj_mat_seq = np.empty((seq_len, 4, 4))
             for time_idx in range(seq_len):
@@ -93,7 +92,7 @@ class VisualizeRollout(object):
             self.fig.add_geometry(eef_traj.geometries[0])
             for time_idx in range(seq_len):
                 waypoint_mat = np.identity(4)
-                waypoint_radius = 2e-3  # [m]
+                waypoint_radius = 5e-3  # [m]
                 if method_name == "SART (Ours)":
                     waypoint_color = [1.0, 0.0, 0.0]
                 elif method_name == "Contact Free MILES":
