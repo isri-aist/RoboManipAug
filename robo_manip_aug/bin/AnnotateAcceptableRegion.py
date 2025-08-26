@@ -183,7 +183,7 @@ class AnnotateAcceptableRegion(object):
             waypoint_mat = np.identity(4)
             waypoint_radius = 2e-3  # [m]
             waypoint_mat = eef_traj_mat_seq[time_idx]
-            waypoint_color = [0.0, 1.0, 0.0]
+            waypoint_color = [0.6, 0.2, 0.8]
             waypoint_sphere = pv.Sphere(
                 radius=waypoint_radius, A2B=waypoint_mat, c=waypoint_color
             )
@@ -235,10 +235,20 @@ class AnnotateAcceptableRegion(object):
 
         # Set camera pose
         view_ctrl = self.fig.visualizer.get_view_control()
-        view_ctrl.set_lookat([0.0, 0.0, 1.4])
-        view_ctrl.set_front([1.2, 0.0, 1.8])
-        view_ctrl.set_up([0.0, 0.0, 1.0])
+        view_ctrl.set_lookat(
+            [0.558179720447653, -1.7352158757130276, 1.473582109591307]
+        )
+        view_ctrl.set_front(
+            [0.40564832335049433, -0.8887510421392286, 0.2134737053113755]
+        )
+        view_ctrl.set_up(
+            [-0.06792247271831278, 0.20359614352599106, 0.9766960366670759]
+        )
         view_ctrl.set_zoom(0.6)
+        # view_ctrl.set_lookat([0.0, 0.0, 1.4])
+        # view_ctrl.set_front([1.2, 0.0, 1.8])
+        # view_ctrl.set_up([0.0, 0.0, 1.0])
+        # view_ctrl.set_zoom(0.6)
 
     def run(self):
         while not self.quit_flag:
@@ -253,9 +263,7 @@ class AnnotateAcceptableRegion(object):
             time.sleep(0.01)
 
     def update_once(self):
-        joint_pos = self.data_manager.get_single_data(
-            DataKey.COMMAND_JOINT_POS, self.current_time_idx
-        )
+        joint_pos = self.data_manager.get_single_data(DataKey.COMMAND_JOINT_POS, 0)
 
         # Set arm joints
         arm_joint_name_list = [
