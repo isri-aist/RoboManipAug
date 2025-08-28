@@ -116,9 +116,15 @@ class VisualizeRollout(object):
 
         # Set camera pose
         view_ctrl = self.fig.visualizer.get_view_control()
-        view_ctrl.set_lookat([0.0, 0.0, 1.4])
-        view_ctrl.set_front([1.2, 0.0, 1.8])
-        view_ctrl.set_up([0.0, 0.0, 1.0])
+        view_ctrl.set_lookat(
+            [0.558179720447653, -1.7352158757130276, 1.473582109591307]
+        )
+        view_ctrl.set_front(
+            [0.40564832335049433, -0.8887510421392286, 0.2134737053113755]
+        )
+        view_ctrl.set_up(
+            [-0.06792247271831278, 0.20359614352599106, 0.9766960366670759]
+        )
         view_ctrl.set_zoom(0.6)
 
     def run(self):
