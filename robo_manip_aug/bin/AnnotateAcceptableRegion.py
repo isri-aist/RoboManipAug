@@ -271,20 +271,11 @@ class AnnotateAcceptableRegion(object):
 
         # Set gripper joints
         gripper_joint_name_list = [
-            "right_driver_joint",
-            "right_spring_link_joint",
-            "right_follower_joint",
-            "left_driver_joint",
-            "left_spring_link_joint",
-            "left_follower_joint",
+            "robotiq_hande_left_finger_joint",
+            "robotiq_hande_right_finger_joint",
         ]
-        for joint_idx, joint_name in enumerate(gripper_joint_name_list):
-            scale = 1.0
-            if "follower" in joint_name:
-                scale = -1.0
-            self.urdf_tm.set_joint(
-                joint_name, np.deg2rad(scale * joint_pos[-1] / 255.0 * 45.0)
-            )
+        for joint_name in gripper_joint_name_list:
+            self.urdf_tm.set_joint(joint_name, 0.015)
 
         self.urdf_graph.set_data()
 

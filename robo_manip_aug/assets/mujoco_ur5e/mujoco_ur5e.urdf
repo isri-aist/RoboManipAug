@@ -356,456 +356,118 @@
       <child link="wrist_3_link"/>
       <origin xyz="-0.0 -0.0 -0.0" rpy="0.0 0.0 0.0"/>
    </joint>
-   <link name="base_mount">
-      <inertial>
-         <origin xyz="-0.0003605835908682333 8.53627523634894e-05 -5.9199370819193636e-05" rpy="0.010714379467335666 -1.5679504402226834 3.132357276590297"/>
-         <mass value="0.15000285388020093"/>
-         <inertia ixx="0.00010234548781984302" iyy="5.3599686956511186e-05" izz="5.217176229736668e-05" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-      <visual name="base_mount">
-         <origin xyz="-0.0003605835908682333 8.53627523634894e-05 -5.919937081919364e-05" rpy="0.01071452283964236 -1.5679504779870121 3.1323571332523317"/>
-         <geometry>
-            <mesh filename="meshes/converted_base_mount.stl"/>
-         </geometry>
-         <material name="gripper_black"/>
-      </visual>
-   </link>
-   <link name="wrist_3_link2base_mount_fixed_jointbody">
-      <inertial>
-         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-         <mass value="0.001"/>
-         <inertia ixx="1e-09" iyy="1e-09" izz="1e-09" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-   </link>
-   <joint type="fixed" name="wrist_3_link2base_mount_fixed">
-      <parent link="wrist_3_link"/>
-      <child link="wrist_3_link2base_mount_fixed_jointbody"/>
-      <origin xyz="0.0 0.1 0.0" rpy="-1.5707963267948957 0.0 0.0"/>
+   <!-- gripper -->
+   <joint name="robotiq_hande_coupler_joint" type="fixed">
+     <origin xyz="0.0 0.1 0.0" rpy="-1.5707963267948957 0.0 0.0"/>
+     <parent link="wrist_3_link"/>
+     <child link="robotiq_hande_coupler"/>
    </joint>
-   <joint type="fixed" name="wrist_3_link2base_mount_fixed_offset">
-      <parent link="wrist_3_link2base_mount_fixed_jointbody"/>
-      <child link="base_mount"/>
-      <origin xyz="-0.0 -0.0 -0.0" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <link name="gripper_base">
-      <inertial>
-         <origin xyz="0.0 -2.70394e-05 0.0354675" rpy="-0.0030569776193478805 0.0 0.0"/>
-         <mass value="0.777441"/>
-         <inertia ixx="0.000260285" iyy="0.000225381" izz="0.000152708" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-      <visual name="gripper_base">
-         <origin xyz="9.197026165775215e-08 -2.7039392101011293e-05 0.0354674813211748" rpy="-0.003056990542377661 7.761755149715555e-08 2.539010455466519e-05"/>
-         <geometry>
-            <mesh filename="meshes/converted_gripper_base.stl"/>
-         </geometry>
-         <material name="gripper_black"/>
-      </visual>
+   <link name="robotiq_hande_coupler">
+     <visual>
+       <geometry>
+         <mesh filename="meshes/io_coupler.dae"/>
+       </geometry>
+       <material name="gripper_black"/>
+     </visual>
+     <collision>
+       <origin rpy="0 0 0" xyz="0 0 0.005449999999999999"/>
+       <geometry>
+         <cylinder length="0.0169" radius="0.0385"/>
+       </geometry>
+     </collision>
+     <inertial>
+       <mass value="0.119"/>
+       <origin rpy="0 0 0" xyz="0 0 0.005449999999999999"/>
+       <inertia ixx="4.4668218799372e-05" ixy="0.0" ixz="0.0" iyy="4.4668218799372e-05" iyz="0.0" izz="8.367187499999999e-05"/>
+     </inertial>
    </link>
-   <link name="base_mount2gripper_base_fixed_jointbody">
-      <inertial>
-         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-         <mass value="0.001"/>
-         <inertia ixx="1e-09" iyy="1e-09" izz="1e-09" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
+   <joint name="robotiq_hande_base_joint" type="fixed">
+     <origin rpy="0 0 0" xyz="0 0 0.011"/>
+     <parent link="robotiq_hande_coupler"/>
+     <child link="robotiq_hande_link"/>
+   </joint>
+   <link name="robotiq_hande_link">
+     <visual>
+       <origin rpy="0 0 0" xyz="0 0 0"/>
+       <geometry>
+         <mesh filename="meshes/hande.dae" scale="1.0 1.0 1.0"/>
+       </geometry>
+       <material name="gripper_black"/>
+     </visual>
+     <collision>
+       <origin rpy="0 0 0" xyz="0 0 0.053450000000000004"/>
+       <geometry>
+         <cylinder length="0.10690000000000001" radius="0.0385"/>
+       </geometry>
+     </collision>
+     <inertial>
+       <mass value="0.86387"/>
+       <origin rpy="0 0 0" xyz="0 0 0.0495"/>
+       <inertia ixx="0.0010092697156669523" ixy="0.0" ixz="0.0" iyy="0.0010092697156669523" iyz="0.0" izz="0.00060740859375"/>
+     </inertial>
    </link>
-   <joint type="fixed" name="base_mount2gripper_base_fixed">
-      <parent link="base_mount"/>
-      <child link="base_mount2gripper_base_fixed_jointbody"/>
-      <origin xyz="0.0 0.0 0.0038" rpy="0.0 0.0 -1.5707963267948957"/>
+   <joint name="robotiq_hande_left_finger_joint" type="prismatic">
+     <origin rpy="0 0 0" xyz="0 0 0.099"/>
+     <parent link="robotiq_hande_link"/>
+     <child link="robotiq_hande_left_finger"/>
+     <axis xyz="1 0 0"/>
+     <limit effort="130" lower="0" upper="0.025" velocity="0.15"/>
    </joint>
-   <joint type="fixed" name="base_mount2gripper_base_fixed_offset">
-      <parent link="base_mount2gripper_base_fixed_jointbody"/>
-      <child link="gripper_base"/>
-      <origin xyz="-0.0 -0.0 -0.0" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <link name="right_driver">
-      <inertial>
-         <origin xyz="2.96931e-12 0.0177547 0.00107314" rpy="1.6425151722801996 0.0 0.0"/>
-         <mass value="0.00899563"/>
-         <inertia ixx="1.72352e-06" iyy="1.60906e-06" izz="3.22006e-07" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-      <visual name="driver">
-         <origin xyz="2.9693095360038857e-12 0.017754693326339378 0.001073141648831213" rpy="1.642515910368616 0.0 0.0"/>
-         <geometry>
-            <mesh filename="meshes/converted_driver.stl"/>
-         </geometry>
-         <material name="gray"/>
-      </visual>
+   <link name="robotiq_hande_left_finger">
+     <visual>
+       <origin rpy="0 0 0" xyz="0 0 0"/>
+       <geometry>
+         <mesh filename="meshes/finger.dae" scale="1.0 1.0 1.0"/>
+       </geometry>
+       <material name="gripper_black"/>
+     </visual>
+     <collision>
+       <origin rpy="0 0 0" xyz="0 0 0"/>
+       <geometry>
+         <mesh filename="meshes/finger_collision.dae" scale="1.0 1.0 1.0"/>
+       </geometry>
+     </collision>
+     <inertial>
+       <origin rpy="0 0 0" xyz="0 0 0"/>
+       <mass value="0.03804"/>
+       <inertia ixx="1E-9" ixy="0.0" ixz="0.0" iyy="1E-9" iyz="0.0" izz="1E-9"/>
+     </inertial>
    </link>
-   <link name="right_driver_joint_jointbody">
-      <inertial>
-         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-         <mass value="0.001"/>
-         <inertia ixx="1e-09" iyy="1e-09" izz="1e-09" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
+   <joint name="robotiq_hande_right_finger_joint" type="prismatic">
+     <origin rpy="0 0 0" xyz="0 0 0.099"/>
+     <parent link="robotiq_hande_link"/>
+     <child link="robotiq_hande_right_finger"/>
+     <axis xyz="-1 0 0"/>
+     <limit effort="130" lower="0" upper="0.025" velocity="0.15"/>
+     <mimic joint="robotiq_hande_left_finger_joint" multiplier="1" offset="0"/>
+   </joint>
+   <link name="robotiq_hande_right_finger">
+     <visual>
+       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
+       <geometry>
+         <mesh filename="meshes/finger.dae" scale="1.0 1.0 1.0"/>
+       </geometry>
+       <material name="gripper_black"/>
+     </visual>
+     <collision>
+       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
+       <geometry>
+         <mesh filename="meshes/finger_collision.dae" scale="1.0 1.0 1.0"/>
+       </geometry>
+     </collision>
+     <inertial>
+       <origin rpy="0 0 0" xyz="0 0 0"/>
+       <mass value="0.03804"/>
+       <inertia ixx="1E-9" ixy="0.0" ixz="0.0" iyy="1E-9" iyz="0.0" izz="1E-9"/>
+     </inertial>
    </link>
-   <joint type="revolute" name="right_driver_joint">
-      <parent link="gripper_base"/>
-      <child link="right_driver_joint_jointbody"/>
-      <origin xyz="0.0 0.0306011 0.054904" rpy="0.0 0.0 0.0"/>
-      <axis xyz="1.0 0.0 0.0"/>
-      <limit lower="0.0" upper="0.8" effort="100" velocity="100"/>
+   <joint name="robotiq_hande_end_joint" type="fixed">
+     <origin rpy="0 0 0" xyz="0 0 0.14550000000000002"/>
+     <parent link="robotiq_hande_link"/>
+     <child link="robotiq_hande_end"/>
    </joint>
-   <joint type="fixed" name="right_driver_joint_offset">
-      <parent link="right_driver_joint_jointbody"/>
-      <child link="right_driver"/>
-      <origin xyz="-0.0 -0.0 -0.0" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <link name="right_coupler">
-      <inertial>
-         <origin xyz="0.0 0.00301209 0.0232175" rpy="0.0 0.12903854724165864 1.5707963267948966"/>
-         <mass value="0.0140974"/>
-         <inertia ixx="4.16206e-06" iyy="3.52216e-06" izz="8.88131e-07" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-      <visual name="coupler">
-         <origin xyz="8.458042296975096e-13 0.003012085414741031 0.023217538318615817" rpy="0.0 0.12903875752327765 1.5707963267948966"/>
-         <geometry>
-            <mesh filename="meshes/converted_coupler.stl"/>
-         </geometry>
-         <material name="gripper_black"/>
-      </visual>
-   </link>
-   <link name="right_coupler_joint_jointbody">
-      <inertial>
-         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-         <mass value="0.001"/>
-         <inertia ixx="1e-09" iyy="1e-09" izz="1e-09" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-   </link>
-   <joint type="revolute" name="right_coupler_joint">
-      <parent link="right_driver"/>
-      <child link="right_coupler_joint_jointbody"/>
-      <origin xyz="0.0 0.0315 -0.0041" rpy="0.0 0.0 0.0"/>
-      <axis xyz="1.0 0.0 0.0"/>
-      <limit lower="-1.57" upper="0.0" effort="100" velocity="100"/>
-   </joint>
-   <joint type="fixed" name="right_coupler_joint_offset">
-      <parent link="right_coupler_joint_jointbody"/>
-      <child link="right_coupler"/>
-      <origin xyz="-0.0 -0.0 -0.0" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <link name="right_spring_link">
-      <inertial>
-         <origin xyz="-8.65005e-09 0.0181624 0.0212658" rpy="0.0 0.7068443151232264 1.5707963267948966"/>
-         <mass value="0.0221642"/>
-         <inertia ixx="8.96853e-06" iyy="6.71733e-06" izz="2.63931e-06" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-      <visual name="spring_link">
-         <origin xyz="-8.650050113628342e-09 0.018162399838260603 0.021265809871824037" rpy="0.0 0.7068435008139309 1.5707963267948966"/>
-         <geometry>
-            <mesh filename="meshes/converted_spring_link.stl"/>
-         </geometry>
-         <material name="gripper_black"/>
-      </visual>
-   </link>
-   <link name="right_spring_link_joint_jointbody">
-      <inertial>
-         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-         <mass value="0.001"/>
-         <inertia ixx="1e-09" iyy="1e-09" izz="1e-09" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-   </link>
-   <joint type="revolute" name="right_spring_link_joint">
-      <parent link="gripper_base"/>
-      <child link="right_spring_link_joint_jointbody"/>
-      <origin xyz="0.0 0.0132 0.0609" rpy="0.0 0.0 0.0"/>
-      <axis xyz="1.0 0.0 0.0"/>
-      <limit lower="-0.29670597283" upper="0.8" effort="100" velocity="100"/>
-   </joint>
-   <joint type="fixed" name="right_spring_link_joint_offset">
-      <parent link="right_spring_link_joint_jointbody"/>
-      <child link="right_spring_link"/>
-      <origin xyz="-0.0 -0.0 -0.0" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <link name="right_follower">
-      <inertial>
-         <origin xyz="0.0 -0.011046 0.0124786" rpy="0.32977841348127324 0.0 0.0"/>
-         <mass value="0.0125222"/>
-         <inertia ixx="2.67415e-06" iyy="2.4559e-06" izz="6.02031e-07" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-      <visual name="follower">
-         <origin xyz="-8.222505669797204e-08 -0.011045964820441189 0.012478641054290796" rpy="0.3343560463823991 1.1571605218252401e-05 4.019967359436549e-06"/>
-         <geometry>
-            <mesh filename="meshes/converted_follower.stl"/>
-         </geometry>
-         <material name="gripper_black"/>
-      </visual>
-   </link>
-   <link name="right_follower_joint_jointbody">
-      <inertial>
-         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-         <mass value="0.001"/>
-         <inertia ixx="1e-09" iyy="1e-09" izz="1e-09" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-   </link>
-   <joint type="revolute" name="right_follower_joint">
-      <parent link="right_spring_link"/>
-      <child link="right_follower_joint_jointbody"/>
-      <origin xyz="0.0 0.037000000000000005 0.044" rpy="0.0 0.0 0.0"/>
-      <axis xyz="1.0 0.0 0.0"/>
-      <limit lower="-0.872664" upper="0.872664" effort="100" velocity="100"/>
-   </joint>
-   <joint type="fixed" name="right_follower_joint_offset">
-      <parent link="right_follower_joint_jointbody"/>
-      <child link="right_follower"/>
-      <origin xyz="-0.0 0.018 -0.0065" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <link name="right_pad">
-      <inertial>
-         <origin xyz="0.0 -0.0025 0.0185" rpy="0.0 0.0 1.5707963267948963"/>
-         <mass value="0.0035"/>
-         <inertia ixx="4.73958e-07" iyy="3.64583e-07" izz="1.23958e-07" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-      <visual name="pad">
-         <origin xyz="1.9278732063789526e-14 -0.0024999999150168138 0.018517375704529604" rpy="0.0 0.0 1.5707963267948966"/>
-         <geometry>
-            <mesh filename="meshes/converted_pad.stl"/>
-         </geometry>
-         <material name="gripper_black"/>
-      </visual>
-   </link>
-   <link name="right_follower2right_pad_fixed_jointbody">
-      <inertial>
-         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-         <mass value="0.001"/>
-         <inertia ixx="1e-09" iyy="1e-09" izz="1e-09" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-   </link>
-   <joint type="fixed" name="right_follower2right_pad_fixed">
-      <parent link="right_follower"/>
-      <child link="right_follower2right_pad_fixed_jointbody"/>
-      <origin xyz="0.0 -0.0189 0.01352" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <joint type="fixed" name="right_follower2right_pad_fixed_offset">
-      <parent link="right_follower2right_pad_fixed_jointbody"/>
-      <child link="right_pad"/>
-      <origin xyz="-0.0 -0.0 -0.0" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <link name="right_silicone_pad">
-      <inertial>
-         <origin xyz="1.9279010081721142e-14 -0.005799999926239252 0.018517375704574398" rpy="0.0 0.0 1.5707963267948963"/>
-         <mass value="0.0013028120143261008"/>
-         <inertia ixx="2.0080436065436886e-07" iyy="1.4953603981518107e-07" izz="5.1824187343216365e-08" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-      <visual name="silicone_pad">
-         <origin xyz="1.9279010081721142e-14 -0.005799999926239252 0.018517375704574398" rpy="0.0 0.0 1.5707963267948966"/>
-         <geometry>
-            <mesh filename="meshes/converted_silicone_pad.stl"/>
-         </geometry>
-         <material name="gripper_black"/>
-      </visual>
-   </link>
-   <link name="right_pad2right_silicone_pad_fixed_jointbody">
-      <inertial>
-         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-         <mass value="0.001"/>
-         <inertia ixx="1e-09" iyy="1e-09" izz="1e-09" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-   </link>
-   <joint type="fixed" name="right_pad2right_silicone_pad_fixed">
-      <parent link="right_pad"/>
-      <child link="right_pad2right_silicone_pad_fixed_jointbody"/>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <joint type="fixed" name="right_pad2right_silicone_pad_fixed_offset">
-      <parent link="right_pad2right_silicone_pad_fixed_jointbody"/>
-      <child link="right_silicone_pad"/>
-      <origin xyz="-0.0 -0.0 -0.0" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <link name="left_driver">
-      <inertial>
-         <origin xyz="0.0 0.0177547 0.00107314" rpy="1.6425151722801996 0.0 0.0"/>
-         <mass value="0.00899563"/>
-         <inertia ixx="1.72352e-06" iyy="1.60906e-06" izz="3.22006e-07" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-      <visual name="driver">
-         <origin xyz="2.9693095360038857e-12 0.017754693326339378 0.001073141648831213" rpy="1.642515910368616 0.0 0.0"/>
-         <geometry>
-            <mesh filename="meshes/converted_driver.stl"/>
-         </geometry>
-         <material name="gray"/>
-      </visual>
-   </link>
-   <link name="left_driver_joint_jointbody">
-      <inertial>
-         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-         <mass value="0.001"/>
-         <inertia ixx="1e-09" iyy="1e-09" izz="1e-09" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-   </link>
-   <joint type="revolute" name="left_driver_joint">
-      <parent link="gripper_base"/>
-      <child link="left_driver_joint_jointbody"/>
-      <origin xyz="0.0 -0.0306011 0.054904" rpy="0.0 0.0 3.141592653589793"/>
-      <axis xyz="1.0 0.0 0.0"/>
-      <limit lower="0.0" upper="0.8" effort="100" velocity="100"/>
-   </joint>
-   <joint type="fixed" name="left_driver_joint_offset">
-      <parent link="left_driver_joint_jointbody"/>
-      <child link="left_driver"/>
-      <origin xyz="-0.0 -0.0 -0.0" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <link name="left_coupler">
-      <inertial>
-         <origin xyz="0.0 0.00301209 0.0232175" rpy="0.0 0.12903854724165864 1.5707963267948966"/>
-         <mass value="0.0140974"/>
-         <inertia ixx="4.16206e-06" iyy="3.52216e-06" izz="8.88131e-07" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-      <visual name="coupler">
-         <origin xyz="8.458042296975096e-13 0.003012085414741031 0.023217538318615817" rpy="0.0 0.12903875752327765 1.5707963267948966"/>
-         <geometry>
-            <mesh filename="meshes/converted_coupler.stl"/>
-         </geometry>
-         <material name="gripper_black"/>
-      </visual>
-   </link>
-   <link name="left_coupler_joint_jointbody">
-      <inertial>
-         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-         <mass value="0.001"/>
-         <inertia ixx="1e-09" iyy="1e-09" izz="1e-09" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-   </link>
-   <joint type="revolute" name="left_coupler_joint">
-      <parent link="left_driver"/>
-      <child link="left_coupler_joint_jointbody"/>
-      <origin xyz="0.0 0.0315 -0.0041" rpy="0.0 0.0 0.0"/>
-      <axis xyz="1.0 0.0 0.0"/>
-      <limit lower="-1.57" upper="0.0" effort="100" velocity="100"/>
-   </joint>
-   <joint type="fixed" name="left_coupler_joint_offset">
-      <parent link="left_coupler_joint_jointbody"/>
-      <child link="left_coupler"/>
-      <origin xyz="-0.0 -0.0 -0.0" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <link name="left_spring_link">
-      <inertial>
-         <origin xyz="-8.65005e-09 0.0181624 0.0212658" rpy="0.0 0.7068443151232264 1.5707963267948966"/>
-         <mass value="0.0221642"/>
-         <inertia ixx="8.96853e-06" iyy="6.71733e-06" izz="2.63931e-06" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-      <visual name="spring_link">
-         <origin xyz="-8.650050113628342e-09 0.018162399838260603 0.021265809871824037" rpy="0.0 0.7068435008139309 1.5707963267948966"/>
-         <geometry>
-            <mesh filename="meshes/converted_spring_link.stl"/>
-         </geometry>
-         <material name="gripper_black"/>
-      </visual>
-   </link>
-   <link name="left_spring_link_joint_jointbody">
-      <inertial>
-         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-         <mass value="0.001"/>
-         <inertia ixx="1e-09" iyy="1e-09" izz="1e-09" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-   </link>
-   <joint type="revolute" name="left_spring_link_joint">
-      <parent link="gripper_base"/>
-      <child link="left_spring_link_joint_jointbody"/>
-      <origin xyz="0.0 -0.0132 0.0609" rpy="0.0 0.0 3.141592653589793"/>
-      <axis xyz="1.0 0.0 0.0"/>
-      <limit lower="-0.29670597283" upper="0.8" effort="100" velocity="100"/>
-   </joint>
-   <joint type="fixed" name="left_spring_link_joint_offset">
-      <parent link="left_spring_link_joint_jointbody"/>
-      <child link="left_spring_link"/>
-      <origin xyz="-0.0 -0.0 -0.0" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <link name="left_follower">
-      <inertial>
-         <origin xyz="0.0 -0.011046 0.0124786" rpy="0.32977841348127324 0.0 0.0"/>
-         <mass value="0.0125222"/>
-         <inertia ixx="2.67415e-06" iyy="2.4559e-06" izz="6.02031e-07" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-      <visual name="follower">
-         <origin xyz="-8.222505669797204e-08 -0.011045964820441189 0.012478641054290796" rpy="0.3343560463823991 1.1571605218252401e-05 4.019967359436549e-06"/>
-         <geometry>
-            <mesh filename="meshes/converted_follower.stl"/>
-         </geometry>
-         <material name="gripper_black"/>
-      </visual>
-   </link>
-   <link name="left_follower_joint_jointbody">
-      <inertial>
-         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-         <mass value="0.001"/>
-         <inertia ixx="1e-09" iyy="1e-09" izz="1e-09" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-   </link>
-   <joint type="revolute" name="left_follower_joint">
-      <parent link="left_spring_link"/>
-      <child link="left_follower_joint_jointbody"/>
-      <origin xyz="0.0 0.037000000000000005 0.044" rpy="0.0 0.0 0.0"/>
-      <axis xyz="1.0 0.0 0.0"/>
-      <limit lower="-0.872664" upper="0.872664" effort="100" velocity="100"/>
-   </joint>
-   <joint type="fixed" name="left_follower_joint_offset">
-      <parent link="left_follower_joint_jointbody"/>
-      <child link="left_follower"/>
-      <origin xyz="-0.0 0.018 -0.0065" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <link name="left_pad">
-      <inertial>
-         <origin xyz="0.0 -0.0025 0.0185" rpy="0.0 0.0 1.5707963267948963"/>
-         <mass value="0.0035"/>
-         <inertia ixx="4.73958e-07" iyy="3.64583e-07" izz="1.23958e-07" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-      <visual name="pad">
-         <origin xyz="1.9278732063789526e-14 -0.0024999999150168138 0.018517375704529604" rpy="0.0 0.0 1.5707963267948966"/>
-         <geometry>
-            <mesh filename="meshes/converted_pad.stl"/>
-         </geometry>
-         <material name="gripper_black"/>
-      </visual>
-   </link>
-   <link name="left_follower2left_pad_fixed_jointbody">
-      <inertial>
-         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-         <mass value="0.001"/>
-         <inertia ixx="1e-09" iyy="1e-09" izz="1e-09" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-   </link>
-   <joint type="fixed" name="left_follower2left_pad_fixed">
-      <parent link="left_follower"/>
-      <child link="left_follower2left_pad_fixed_jointbody"/>
-      <origin xyz="0.0 -0.0189 0.01352" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <joint type="fixed" name="left_follower2left_pad_fixed_offset">
-      <parent link="left_follower2left_pad_fixed_jointbody"/>
-      <child link="left_pad"/>
-      <origin xyz="-0.0 -0.0 -0.0" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <link name="left_silicone_pad">
-      <inertial>
-         <origin xyz="1.9279010081721142e-14 -0.005799999926239252 0.018517375704574398" rpy="0.0 0.0 1.5707963267948963"/>
-         <mass value="0.0013028120143261008"/>
-         <inertia ixx="2.0080436065436886e-07" iyy="1.4953603981518107e-07" izz="5.1824187343216365e-08" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-      <visual name="silicone_pad">
-         <origin xyz="1.9279010081721142e-14 -0.005799999926239252 0.018517375704574398" rpy="0.0 0.0 1.5707963267948966"/>
-         <geometry>
-            <mesh filename="meshes/converted_silicone_pad.stl"/>
-         </geometry>
-         <material name="gripper_black"/>
-      </visual>
-   </link>
-   <link name="left_pad2left_silicone_pad_fixed_jointbody">
-      <inertial>
-         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-         <mass value="0.001"/>
-         <inertia ixx="1e-09" iyy="1e-09" izz="1e-09" ixy="0" ixz="0" iyz="0"/>
-      </inertial>
-   </link>
-   <joint type="fixed" name="left_pad2left_silicone_pad_fixed">
-      <parent link="left_pad"/>
-      <child link="left_pad2left_silicone_pad_fixed_jointbody"/>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-   </joint>
-   <joint type="fixed" name="left_pad2left_silicone_pad_fixed_offset">
-      <parent link="left_pad2left_silicone_pad_fixed_jointbody"/>
-      <child link="left_silicone_pad"/>
-      <origin xyz="-0.0 -0.0 -0.0" rpy="0.0 0.0 0.0"/>
-   </joint>
+   <link name="robotiq_hande_end"/>
+   <!-- camera -->
    <link name="d435i">
       <inertial>
          <origin xyz="0.0014511348017872574 -0.0003193267750761583 -0.01354119004097661" rpy="1.6323782071719153 -1.4906062228156745 1.5071320126951782"/>
@@ -886,7 +548,7 @@
    <joint type="fixed" name="wrist_3_link2d435i_fixed">
       <parent link="wrist_3_link"/>
       <child link="wrist_3_link2d435i_fixed_jointbody"/>
-      <origin xyz="0.0 0.1 -0.05" rpy="-1.5708000000000002 0.0 0.0"/>
+      <origin xyz="0.0 0.13 0.05" rpy="-1.5708000000000002 0.0 0.0"/>
    </joint>
    <joint type="fixed" name="wrist_3_link2d435i_fixed_offset">
       <parent link="wrist_3_link2d435i_fixed_jointbody"/>
