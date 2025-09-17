@@ -2,6 +2,7 @@
 Self-Augmented Robot Trajectory: Efficient Imitation Learning via Safe Self-augmentation with Demonstrator-annotated Precision.
 
 [![Project Page](https://img.shields.io/badge/Project-Page-blue?logo=github)](https://sites.google.com/view/sart-il/)
+[![LICENSE](https://img.shields.io/github/license/isri-aist/RoboManipAug)](https://github.com/isri-aist/RoboManipAug/blob/main/LICENSE)
 
 ## Install
 Install RoboManipBaselines with the `act` extra as described [here](https://github.com/isri-aist/RoboManipBaselines/blob/master/doc/install.md#act).
