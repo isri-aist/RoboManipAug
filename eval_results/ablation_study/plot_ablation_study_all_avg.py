@@ -76,26 +76,27 @@ def plot_accuracies_from_yaml_files(file_paths, output_pdf=None):
 
     plt.figure(figsize=(14, 6))
     box_width = 0.2
-        
+
     # Initialize dictionaries to store merged accuracies for each method
     merged_method_accs = {method: [] for method in all_methods}
 
     # Merge accuracies from all tasks for each method
     for item in task_method_accs:
-        method = item['method']
-        merged_method_accs[method].extend(item['accs'])
+        method = item["method"]
+        merged_method_accs[method].extend(item["accs"])
 
     print("\nMerged Method Statistics:")
     for method in all_methods:
         accs = merged_method_accs[method]
         if accs:
-            print(f"{method_labels[method]}: mean={sum(accs)/len(accs):.3f}, samples={len(accs)}")
+            print(
+                f"{method_labels[method]}: mean={sum(accs)/len(accs):.3f}, samples={len(accs)}"
+            )
 
     # Create box plot for merged accuracies
     plt.figure(figsize=(10, 6))
     box_width = 0.6
-    positions = range(len(all_methods))
-    
+
     boxes = []
     for i, method in enumerate(all_methods):
         box = plt.boxplot(
@@ -110,20 +111,20 @@ def plot_accuracies_from_yaml_files(file_paths, output_pdf=None):
 
     # Remove x-axis ticks and labels
     plt.xticks([])
-    plt.xlabel('')
+    plt.xlabel("")
     plt.ylabel("Success Rate [%]", fontsize=20)
-    plt.ylim(-1, 105.)
+    plt.ylim(-1, 105.0)
     plt.yticks(fontsize=15)
-    
+
     # Perform t-test between Default (Ours) and other methods
-    default_accs = merged_method_accs['Default']
+    default_accs = merged_method_accs["Default"]
 
     for i, method in enumerate(all_methods[1:], 1):  # Skip Default (first method)
         other_accs = merged_method_accs[method]
         t_stat, p_value = stats.ttest_ind(default_accs, other_accs)
         # Add asterisk if significantly better (p < 0.05)
-        marker = '*' if p_value < 0.05 else ''
-        plt.text(i, 98., f'{marker}', ha='center', va='bottom', fontsize=font_size)
+        marker = "*" if p_value < 0.05 else ""
+        plt.text(i, 98.0, f"{marker}", ha="center", va="bottom", fontsize=font_size)
 
     # Add legend
     handles = [
@@ -140,7 +141,13 @@ def plot_accuracies_from_yaml_files(file_paths, output_pdf=None):
     ]
     # Increase right margin to accommodate legend
     plt.subplots_adjust(right=0.85)
-    plt.legend(handles=handles, bbox_to_anchor=(0.5, 1.05), loc="lower center", ncol=3, fontsize=15)
+    plt.legend(
+        handles=handles,
+        bbox_to_anchor=(0.5, 1.05),
+        loc="lower center",
+        ncol=3,
+        fontsize=15,
+    )
     plt.tight_layout()
 
 
