@@ -8,7 +8,7 @@ Self-Augmented Robot Trajectory: Efficient Imitation Learning via Safe Self-augm
 Install RoboManipBaselines with the `act` extra as described [here](https://github.com/isri-aist/RoboManipBaselines/blob/master/doc/install.md#act).
 
 > [!NOTE]
-> Operation has been verified with the RoboManipAug tag of RoboManipBaselines. Unless you have a specific reason to use the latest features, installing this tag is the more stable option.
+> Operation has been verified with the [RoboManipAug](https://github.com/isri-aist/RoboManipBaselines/tree/RoboManipAug) tag of RoboManipBaselines. Unless you have a specific reason to use the latest features, installing this tag is the more stable option.
 
 Install RoboManipAug:
 ```console
