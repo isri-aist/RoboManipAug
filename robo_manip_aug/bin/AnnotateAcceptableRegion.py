@@ -190,10 +190,7 @@ class AnnotateAcceptableRegion(object):
             self.fig.add_geometry(waypoint_sphere.geometries[0])
 
         # Draw acceptable sphere
-        if self.args.static_annotation:
-            self.acceptable_width = 0.02  # [m]
-        else:
-            self.acceptable_width = self.args.initial_acceptable_width
+        self.acceptable_width = self.args.initial_acceptable_width
         self.acceptable_sphere_lineset = None
         self.update_acceptable_sphere()
 
@@ -241,6 +238,12 @@ class AnnotateAcceptableRegion(object):
         view_ctrl.set_zoom(0.6)
 
     def run(self):
+        if self.args.static_annotation:
+            while True:
+                self.right_callback(self.fig.visualizer, 1, 0)
+                if self.next_time_idx is None:
+                    break
+
         while not self.quit_flag:
             self.update_once()
 
@@ -312,7 +315,10 @@ class AnnotateAcceptableRegion(object):
         )
         if self.current_time_idx < self.data_len - 1:
             if self.args.static_annotation:
-                self.next_time_idx = self.current_time_idx + 1
+                skip_idx = 3
+                self.next_time_idx = np.min(
+                    [self.current_time_idx + skip_idx, self.data_len - 1]
+                )
             else:
                 subseq_start_time_idx = self.current_time_idx + 1
                 rel_pos_subseq = (
