@@ -165,6 +165,12 @@ class CollectAugmentedDataBase(TeleopBase):
             help="Number of samples from each sphere of acceptable region",
         )
         parser.add_argument(
+            "--num_total_sample",
+            type=int,
+            default=None,
+            help="Number of minimum required samples in total",
+        )
+        parser.add_argument(
             "--position_fix",
             action="store_true",
             help="Whether to fix the position in the augmented trajectory (and vary only the rotation)",
@@ -327,6 +333,16 @@ class CollectAugmentedDataBase(TeleopBase):
         )
         with open(self.args.annotation_path, "rb") as f:
             self.annotation_data = pickle.load(f)
+        if self.args.num_total_sample is not None:
+            self.args.num_sphere_sample = int(
+                np.ceil(
+                    self.args.num_total_sample
+                    / len(self.annotation_data["acceptable_region_list"])
+                )
+            )
+            print(
+                f"[{self.__class__.__name__}] Num sphere sample is overwritten from num total sample: {self.args.num_sphere_sample}"
+            )
 
         # Reset environment
         world_idx = self.base_data_manager.get_meta_data("world_idx")
