@@ -422,7 +422,7 @@ class CollectAugmentedDataBase(TeleopBase):
             else:
                 radius = self.args.overwrite_radius
             if self.args.sample_inside_sphere:
-                radius = np.random.uniform(0.0, radius)
+                radius = radius * np.random.rand() ** (1.0 / 3)
             sample_pos_list = sample_points_on_sphere(
                 center_se3.translation, radius, self.args.num_sphere_sample
             )
