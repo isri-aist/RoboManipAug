@@ -200,6 +200,11 @@ class CollectAugmentedDataBase(TeleopBase):
             help="Overwrite radius of acceptable region with a fixed value",
         )
         parser.add_argument(
+            "--sample_inside_sphere",
+            action="store_true",
+            help="Sample from inside the acceptable region",
+        )
+        parser.add_argument(
             "--return_to_center",
             action="store_true",
             help="Return to the center of the acceptable region",
@@ -416,6 +421,8 @@ class CollectAugmentedDataBase(TeleopBase):
                 radius = acceptable_region["radius"]
             else:
                 radius = self.args.overwrite_radius
+            if self.args.sample_inside_sphere:
+                radius = np.random.uniform(0.0, radius)
             sample_pos_list = sample_points_on_sphere(
                 center_se3.translation, radius, self.args.num_sphere_sample
             )
