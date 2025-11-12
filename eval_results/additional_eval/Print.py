@@ -4,6 +4,7 @@ import yaml
 
 # ===== 並び順指定 =====
 VARIANT_ORDER = [
+    "Proposed",
     "MilesRadius001",
     "MilesRadius010",
     "NextSphereConvergence",
